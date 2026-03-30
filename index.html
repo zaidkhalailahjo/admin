@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة فرح سناكس</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Kufi Arabic', 'Inter', sans-serif; background-color: #f3f4f6; }
+        .modal { transition: opacity 0.3s ease, visibility 0.3s ease; opacity: 0; visibility: hidden; }
+        .modal.active { opacity: 1; visibility: visible; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-gray-800">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Login Screen (Visible by default) -->
+    <div id="login-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-sm text-center shadow-2xl border border-gray-100">
+            <div class="w-20 h-20 bg-[#00f] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="shield-check" class="w-10 h-10 text-[#002d74]"></i>
+            </div>
+            <h2 class="text-2xl font-black text-[#002d74] mb-2">مرحباً بك يا مدير!</h2>
+            <p class="text-sm text-gray-500 mb-6">الرجاء إدخال كلمة المرور للوصول إلى لوحة التحكم</p>
+            <input type="password" id="admin-password-input" class="w-full p-4 border rounded-xl mb-4 text-center tracking-widest text-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50" placeholder="••••">
+            <button onclick="window.adminLogin()" class="w-full bg-[#00839b] text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-[#005f73] transition-colors text-lg flex justify-center items-center gap-2">
+                دخول للنظام <i data-lucide="log-in" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard (Hidden by default) -->
+    <div id="dashboard-screen" class="hidden flex-col h-screen overflow-hidden">
+        <!-- Header -->
+        <header class="bg-[#002d74] text-white shadow-md z-10 flex-shrink-0">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <img src="https://uploads.onecompiler.io/43n8uttmw/448872dja/WhatsApp_Image_2025-12-21_at_11.54.43_AM-removebg-preview.png" alt="فرح سناكس" class="h-10 md:h-12 w-auto object-contain bg-white rounded-lg p-1">
+                    <div>
+                        <h1 class="text-lg md:text-xl font-extrabold">إدارة فرح سناكس</h1>
+                        <p class="text-xs text-green-300 font-bold flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> متصل بقاعدة البيانات</p>
+                    </div>
+                </div>
+                <button onclick="window.adminLogout()" class="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden md:inline">خروج</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow flex flex-col md:flex-row overflow-hidden container mx-auto">
+            <!-- Sidebar / Tabs -->
+            <div class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-l border-gray-200 flex-shrink-0 flex md:flex-col shadow-sm z-0">
+                <button onclick="window.switchAdminTab('orders')" id="tab-orders" class="flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i> إدارة الطلبات
+                </button>
+                <button onclick="window.switchAdminTab('users')" id="tab-users" class="flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i> العملاء والمحافظ
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-grow p-4 md:p-6 overflow-y-auto bg-gray-50 relative" id="admin-content-area">
+                
+                <!-- Orders Section -->
+                <div id="admin-orders-sec" class="space-y-4">
+                    <div class="flex justify-between items-end mb-4">
+                        <h2 class="text-xl font-bold text-[#002d74]">أحدث الطلبات الواردة</h2>
+                        <button onclick="window.renderAdminOrders()" class="text-sm text-gray-500 hover:text-[#00839b] flex items-center gap-1"><i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث</button>
+                    </div>
+                    <div id="orders-list-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <p class="text-center text-gray-500 col-span-full py-10">جاري جلب الطلبات...</p>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="admin-users-sec" class="hidden space-y-4">
+                    <h2 class="text-xl font-bold text-[#002d74] mb-4">إدارة بيانات العملاء</h2>
+                    <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
+                        <input type="text" id="admin-user-search" oninput="window.renderAdminUsers()" placeholder="ابحث برقم الهاتف أو اسم العميل..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent">
+                        <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
+                    </div>
+                    <div id="admin-users-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Wallet Edit Modal -->
+    <div id="admin-wallet-modal" class="modal fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+         <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl text-center transform scale-95 transition-all">
+            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="coins" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#002d74] mb-1">تعديل رصيد المحفظة</h3>
+            <p id="wallet-edit-phone" class="text-sm text-gray-500 mb-6 font-semibold" dir="ltr"></p>
+            <div class="space-y-3">
+                <div class="relative">
+                    <input type="number" step="0.01" id="wallet-edit-balance" placeholder="0.00" class="w-full p-4 border-2 border-green-200 rounded-xl outline-none focus:border-green-500 bg-green-50 font-black text-center text-green-700 text-2xl pr-12">
+                    <span class="absolute right-4 top-5 text-green-600 font-bold">د.أ</span>
+                </div>
+                <button id="btn-save-wallet" onclick="window.saveAdminWallet()" class="w-full bg-[#00839b] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005f73] transition-colors text-lg mt-2">حفظ التغييرات</button>
+                <button class="close-modal w-full text-gray-500 hover:bg-gray-100 py-3 rounded-xl text-sm font-bold transition-colors border border-gray-200">إلغاء الأمر</button>
+            </div>
+         </div>
+    </div>
+
+    <!-- Admin Order Details Modal -->
+    <div id="admin-order-details-modal" class="modal fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+         <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div class="p-5 bg-[#002d74] text-white flex justify-between items-center z-10 shadow-md">
+                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="receipt" class="w-6 h-6"></i> تفاصيل الطلب</h2>
+                <button class="close-modal p-2 rounded-full hover:bg-white/20 bg-white/10 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-grow overflow-y-auto p-5 bg-gray-50" id="admin-order-details-content">
+                <!-- Details injected here -->
+            </div>
+         </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Same Configuration as the main app
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'farah-snacks-v3';
+        const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyCHJ4leiSUZAnzA6NQE-DkJDv_Z34VQXLU",
+            authDomain: "farah-snacks.firebaseapp.com",
+            projectId: "farah-snacks",
+            storageBucket: "farah-snacks.firebasestorage.app",
+            messagingSenderId: "395153655294",
+            appId: "1:395153655294:web:60937a81930e7db1e56caf"
+        };
+        const ADMIN_PASS = '4522'; // The new password you requested
+
+        const PATH_ORDERS = `artifacts/${APP_ID}/public/data/orders`;
+        const PATH_PROFILES = `artifacts/${APP_ID}/public/data/profiles`;
+
+        let appState = {
+            db: null,
+            adminAllOrders: [],
+            adminAllUsers: [],
+            editingUser: null,
+            isLoggedIn: false
+        };
+
+        const showToast = (msg, type) => {
+            const c = document.getElementById('toast-container');
+            if(!c) return;
+            const el = document.createElement('div');
+            el.className = `p-4 rounded-xl shadow-2xl font-bold text-white text-sm transform transition-all ${type==='success'?'bg-green-500':'bg-red-500'}`;
+            el.innerHTML = `<div class="flex items-center gap-2"><i data-lucide="${type==='success'?'check-circle':'alert-circle'}" class="w-5 h-5"></i> ${msg}</div>`;
+            c.appendChild(el);
+            if(window.lucide) lucide.createIcons();
+            setTimeout(() => el.remove(), 4000);
+        };
+
+        const toggleModal = (n, s) => {
+            const el = document.getElementById(n + '-modal');
+            if(!el) return;
+            if(s){ el.classList.remove('hidden'); setTimeout(()=>el.classList.add('active'), 10); }
+            else{ el.classList.remove('active'); setTimeout(()=>el.classList.add('hidden'), 300); }
+        };
+        window.toggleModal = toggleModal;
+        document.querySelectorAll('.close-modal').forEach(b => b.onclick = (e) => toggleModal(e.target.closest('.modal').id.replace('-modal',''), false));
+
+        // Initialize Firebase ONLY (No Auth needed for admin reading public data if rules allow, or assuming local dev)
+        const initFirebase = async () => {
+            try {
+                const app = initializeApp(FIREBASE_CONFIG);
+                appState.db = getFirestore(app);
+                // Check if already logged in via localStorage
+                if (localStorage.getItem('admin_logged_in') === 'true') {
+                    showDashboard();
+                }
+            } catch (e) {
+                console.error("Firebase init err", e);
+                showToast("خطأ في الاتصال بقاعدة البيانات", "error");
+            }
+            if(window.lucide) lucide.createIcons();
+        };
+
+        window.adminLogin = () => {
+            const pass = document.getElementById('admin-password-input').value;
+            if(pass === ADMIN_PASS) {
+                localStorage.setItem('admin_logged_in', 'true');
+                showDashboard();
+                showToast("مرحباً بك في لوحة الإدارة", "success");
+            } else {
+                showToast("كلمة المرور غير صحيحة", "error");
+                document.getElementById('admin-password-input').value = '';
+            }
+        };
+
+        window.adminLogout = () => {
+            localStorage.removeItem('admin_logged_in');
+            appState.isLoggedIn = false;
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('flex');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('admin-password-input').value = '';
+            showToast("تم تسجيل الخروج", "success");
+        };
+
+        // Listen for Enter key on password input
+        document.getElementById('admin-password-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                window.adminLogin();
+            }
+        });
+
+        const showDashboard = () => {
+            appState.isLoggedIn = true;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            document.getElementById('dashboard-screen').classList.add('flex');
+            listenToOrders();
+            window.fetchAdminUsers();
+        };
+
+        const listenToOrders = () => {
+            if (!appState.db) return;
+            onSnapshot(collection(appState.db, PATH_ORDERS), (snap) => {
+                let hasNew = false;
+                if (appState.adminAllOrders.length > 0) {
+                    snap.docChanges().forEach(change => {
+                        if (change.type === 'added') hasNew = true;
+                    });
+                }
+                if (hasNew && appState.isLoggedIn) {
+                    showToast("طلب جديد! تفقد القائمة", "success");
+                    try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play(); } catch(e){}
+                }
+
+                const all = []; snap.forEach(d => all.push({id: d.id, ...d.data()}));
+                appState.adminAllOrders = all;
+                window.renderAdminOrders();
+            }, (error) => {
+                console.error("Error listening to orders:", error);
+            });
+        };
+
+        window.switchAdminTab = (t) => {
+            document.getElementById('admin-orders-sec').classList.toggle('hidden', t!=='orders');
+            document.getElementById('admin-users-sec').classList.toggle('hidden', t!=='users');
+            
+            const tabOrders = document.getElementById('tab-orders');
+            const tabUsers = document.getElementById('tab-users');
+            
+            if (t === 'orders') {
+                tabOrders.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors";
+                tabUsers.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors";
+            } else {
+                tabUsers.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors";
+                tabOrders.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors";
+            }
+        };
+
+        window.renderAdminOrders = () => {
+            const sec = document.getElementById('orders-list-container');
+            const sorted = appState.adminAllOrders.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            
+            if (sorted.length === 0) {
+                sec.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400"><i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i><p class="font-bold text-lg">لا توجد طلبات حتى الآن</p></div>';
+                if(window.lucide) lucide.createIcons();
+                return;
+            }
+
+            sec.innerHTML = sorted.map(o => {
+                let statusBg = 'bg-gray-100 text-gray-600';
+                if(o.status === 'قيد الانتظار') statusBg = 'bg-yellow-100 text-yellow-700';
+                if(o.status === 'قيد التحضير') statusBg = 'bg-orange-100 text-orange-700';
+                if(o.status === 'في الطريق') statusBg = 'bg-blue-100 text-blue-700';
+                if(o.status === 'تم التوصيل') statusBg = 'bg-green-100 text-green-700';
+
+                return `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-[#00839b]/30 transition-all" onclick="window.showAdminOrderDetails('${o.id}')">
+                    <div class="flex justify-between items-start mb-3 border-b border-gray-50 pb-3">
+                        <div>
+                            <h4 class="font-bold text-[#002d74] text-lg flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${o.customerName}</h4>
+                            <p class="text-xs text-gray-500 mt-1" dir="ltr">${o.phone}</p>
+                        </div>
+                        <span class="text-xs px-3 py-1.5 rounded-full font-bold ${statusBg}">${o.status}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-3">
+                        <p class="text-sm text-gray-500 font-medium bg-gray-50 px-3 py-1.5 rounded-lg"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline text-[#00839b]"></i> ${o.location}</p>
+                        <span class="font-black text-[#00839b] text-lg">${o.total.toFixed(2)} د.أ</span>
+                    </div>
+                </div>`;
+            }).join('');
+            if(window.lucide) lucide.createIcons();
+        };
+
+        window.showAdminOrderDetails = (orderId) => {
+            const o = appState.adminAllOrders.find(x => x.id === orderId);
+            if(!o) return;
+            
+            const itemsHtml = o.items.map(i => `
+                <div class="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 mb-2 shadow-sm">
+                    <img src="${i.product.image}" class="w-14 h-14 object-contain rounded-xl bg-gray-50 p-1">
+                    <div class="flex-grow">
+                        <p class="font-bold text-sm text-[#002d74]">${i.product.name} ${i.option ? `<span class="text-[#00839b]">(${i.option})</span>` : ''}</p>
+                        <p class="text-xs text-gray-500 font-bold mt-1">الكمية: <span class="text-gray-800 bg-gray-100 px-2 py-0.5 rounded">${i.quantity}</span></p>
+                    </div>
+                    <div class="font-black text-[#00839b] text-lg">${(i.quantity * i.product.price).toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            const dateStr = o.createdAt?.toMillis ? new Date(o.createdAt.toMillis()).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : 'غير محدد';
+
+            const content = `
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full ${o.paymentMethod === 'wallet' ? 'bg-green-500' : 'bg-gray-400'}"></div>
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-3">
+                            <h4 class="font-bold text-xl text-[#002d74]"><i data-lucide="user-check" class="w-5 h-5 inline text-[#00839b] mr-1"></i> ${o.customerName}</h4>
+                            <span class="text-xs ${o.paymentMethod === 'wallet' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'} px-3 py-1 rounded-full font-bold flex items-center gap-1">
+                                <i data-lucide="${o.paymentMethod === 'wallet' ? 'wallet' : 'banknote'}" class="w-3 h-3"></i> 
+                                ${o.paymentMethod === 'wallet' ? 'دفع محفظة' : 'الدفع كاش'}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm font-medium">
+                            <div><span class="text-gray-400 block text-xs mb-1">وقت الطلب</span> ${dateStr}</div>
+                            <div><span class="text-gray-400 block text-xs mb-1">المنطقة</span> ${o.location}</div>
+                            <div class="col-span-2"><span class="text-gray-400 block text-xs mb-1">رقم الهاتف</span> <span dir="ltr">${o.phone || 'غير متوفر'}</span></div>
+                        </div>
+                        ${o.exactLocation ? `<a href="${o.exactLocation}" target="_blank" class="mt-4 w-full text-blue-600 hover:text-white hover:bg-blue-600 text-sm font-bold flex justify-center items-center gap-2 bg-blue-50 py-3 rounded-xl transition-colors border border-blue-100"><i data-lucide="map" class="w-4 h-4"></i> فتح الموقع الدقيق للعميل (GPS)</a>` : ''}
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-500 mb-3 flex items-center gap-2"><i data-lucide="shopping-bag" class="w-4 h-4"></i> المنتجات المطلوبة</h4>
+                        ${itemsHtml}
+                        ${o.customOrder ? `<div class="bg-orange-50 p-4 rounded-2xl border border-orange-200 text-sm mt-3"><span class="font-bold text-orange-700 flex items-center gap-1 mb-2"><i data-lucide="message-square" class="w-4 h-4"></i> ملاحظات العميل:</span> <p class="text-orange-900 leading-relaxed">${o.customOrder}</p></div>` : ''}
+                    </div>
+
+                    <div class="bg-[#f0f9fa] p-5 rounded-2xl border border-[#00839b]/20 shadow-sm text-sm space-y-3 font-medium">
+                        <div class="flex justify-between text-gray-600"><span>سعر المنتجات:</span><span>${(o.total - (o.fees?.delivery||0) - (o.fees?.service||0) + (o.fees?.discount||0)).toFixed(2)} د.أ</span></div>
+                        <div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span>+ ${(o.fees?.delivery||0).toFixed(2)} د.أ</span></div>
+                        <div class="flex justify-between text-gray-600"><span>رسوم الخدمة:</span><span>+ ${(o.fees?.service||0).toFixed(2)} د.أ</span></div>
+                        ${o.fees?.coupon ? `<div class="flex justify-between text-green-600 font-bold bg-green-50 p-2 rounded-lg mt-1"><span>خصم (${o.fees.coupon}):</span><span>- ${(o.fees?.discount||0).toFixed(2)} د.أ</span></div>` : ''}
+                        <div class="flex justify-between border-t border-[#00839b]/20 pt-3 mt-2 font-black text-2xl text-[#002d74] items-center">
+                            <span>الإجمالي</span>
+                            <span class="text-[#00839b]">${o.total.toFixed(2)} د.أ</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <label class="font-bold text-sm mb-3 text-gray-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[#00839b]"></i> تحديث حالة الطلب الآن:</label>
+                        <select onchange="window.updateOrderStatus('${o.id}', this.value)" class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none transition-all text-[#002d74] text-lg">
+                            <option ${o.status==='قيد الانتظار'?'selected':''}>قيد الانتظار</option>
+                            <option ${o.status==='قيد التحضير'?'selected':''}>قيد التحضير</option>
+                            <option ${o.status==='في الطريق'?'selected':''}>في الطريق</option>
+                            <option ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            document.getElementById('admin-order-details-content').innerHTML = content;
+            if(window.lucide) lucide.createIcons();
+            toggleModal('admin-order-details', true);
+        };
+
+        window.updateOrderStatus = async (id, s) => {
+            if (!appState.db) return;
+            try {
+                await updateDoc(doc(appState.db, PATH_ORDERS, id), { status: s });
+                showToast("تم تحديث الحالة للعميل", "success");
+                const o = appState.adminAllOrders.find(x => x.id === id);
+                if(o) o.status = s;
+                window.renderAdminOrders();
+            } catch(e) {
+                console.error(e);
+                showToast("حدث خطأ في التحديث", "error");
+            }
+        };
+
+        window.fetchAdminUsers = async () => {
+            if(!appState.db) return;
+            try {
+                const snap = await getDocs(collection(appState.db, PATH_PROFILES));
+                appState.adminAllUsers = []; snap.forEach(d => appState.adminAllUsers.push({uid: d.id, ...d.data()}));
+                window.renderAdminUsers();
+            } catch(e) {
+                console.error("Error fetching users", e);
+            }
+        };
+
+        window.renderAdminUsers = () => {
+            const term = document.getElementById('admin-user-search').value.trim();
+            const list = document.getElementById('admin-users-list');
+            const filtered = appState.adminAllUsers.filter(u => (u.phone||'').includes(term) || (u.name||'').includes(term));
+            
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p class="font-bold">لا يوجد عملاء يطابقون بحثك</p></div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(u => `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
+                    <div>
+                        <p class="font-bold text-base text-[#002d74] flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${u.name||'بدون اسم'}</p>
+                        <p class="text-xs text-gray-500 mt-1 mb-2 font-medium" dir="ltr">${u.phone||'لا يوجد رقم'}</p>
+                        <p class="text-sm font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg inline-block">الرصيد: ${(u.balance||0).toFixed(2)} د.أ</p>
+                    </div>
+                    <button onclick="window.openAdminWallet('${u.uid}', '${u.phone||u.name}', ${u.balance||0})" class="bg-[#00839b] hover:bg-[#002d74] transition-colors text-white p-3 rounded-xl shadow-sm" title="تعديل المحفظة">
+                        <i data-lucide="edit-3" class="w-5 h-5"></i>
+                    </button>
+                </div>`).join('');
+            if(window.lucide) lucide.createIcons();
+        };
+
+        window.openAdminWallet = (uid, nameOrPhone, bal) => {
+            appState.editingUser = uid;
+            document.getElementById('wallet-edit-phone').textContent = nameOrPhone;
+            document.getElementById('wallet-edit-balance').value = bal;
+            toggleModal('admin-wallet', true);
+        };
+
+        window.saveAdminWallet = async () => {
+            const bal = parseFloat(document.getElementById('wallet-edit-balance').value) || 0;
+            const btn = document.getElementById('btn-save-wallet');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+            try {
+                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { balance: bal });
+                const u = appState.adminAllUsers.find(x=>x.uid===appState.editingUser); if(u) u.balance = bal;
+                window.renderAdminUsers(); 
+                toggleModal('admin-wallet', false); 
+                showToast("تم شحن رصيد العميل بنجاح", "success");
+            } catch(e) { 
+                showToast("خطأ بالاتصال", "error"); 
+            }
+            btn.disabled = false; btn.textContent = 'حفظ التغييرات';
+        };
+
+        // Start
+        initFirebase();
+    </script>
+</body>
+</html>

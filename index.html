@@ -13,6 +13,36 @@
         .modal.active { opacity: 1; visibility: visible; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #00839b;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Animations for Order Status */
+        @keyframes bounce-cook {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px) scale(1.1); }
+        }
+        .anim-cooking { animation: bounce-cook 1s ease-in-out infinite; display: inline-block; }
+        
+        @keyframes drive {
+            0% { transform: translateX(10px); opacity: 0.5; }
+            50% { transform: translateX(-15px); opacity: 1; }
+            100% { transform: translateX(10px); opacity: 0.5; }
+        }
+        .anim-driving { animation: drive 2s ease-in-out infinite; display: inline-block; }
+        
+        @keyframes pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .anim-done { animation: pop 0.5s ease-out forwards; display: inline-block; color: #10b981; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen text-gray-800">
@@ -57,20 +87,23 @@
             <!-- Sidebar / Tabs -->
             <div class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-l border-gray-200 flex-shrink-0 flex md:flex-col shadow-sm z-0">
                 <button onclick="window.switchAdminTab('orders')" id="tab-orders" class="flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors">
-                    <i data-lucide="shopping-bag" class="w-5 h-5"></i> إدارة الطلبات
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i> الطلبات الجديدة
                 </button>
                 <button onclick="window.switchAdminTab('users')" id="tab-users" class="flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                    <i data-lucide="users" class="w-5 h-5"></i> العملاء والمحافظ
+                    <i data-lucide="users" class="w-5 h-5"></i> العملاء والطلبات السابقة
+                </button>
+                <button onclick="window.switchAdminTab('menu')" id="tab-menu" class="flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors">
+                    <i data-lucide="layout-list" class="w-5 h-5"></i> إدارة المنيو
                 </button>
             </div>
 
             <!-- Content Area -->
             <div class="flex-grow p-4 md:p-6 overflow-y-auto bg-gray-50 relative" id="admin-content-area">
                 
-                <!-- Orders Section -->
+                <!-- Orders Section (Active Only) -->
                 <div id="admin-orders-sec" class="space-y-4">
                     <div class="flex justify-between items-end mb-4">
-                        <h2 class="text-xl font-bold text-[#002d74]">أحدث الطلبات الواردة</h2>
+                        <h2 class="text-xl font-bold text-[#002d74]">أحدث الطلبات (غير المكتملة)</h2>
                         <button onclick="window.renderAdminOrders()" class="text-sm text-gray-500 hover:text-[#00839b] flex items-center gap-1"><i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث</button>
                     </div>
                     <div id="orders-list-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -78,31 +111,80 @@
                     </div>
                 </div>
 
-                <!-- Users Section -->
-                <div id="admin-users-sec" class="hidden space-y-4">
-                    <h2 class="text-xl font-bold text-[#002d74] mb-4">إدارة بيانات العملاء</h2>
-                    <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
-                        <input type="text" id="admin-user-search" oninput="window.renderAdminUsers()" placeholder="ابحث برقم الهاتف أو اسم العميل..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent">
-                        <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
+                <!-- Users and Previous Orders Section -->
+                <div id="admin-users-sec" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-[#002d74] mb-4">إدارة بيانات العملاء والمحافظ</h2>
+                        <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
+                            <input type="text" id="admin-user-search" oninput="window.renderAdminUsers()" placeholder="ابحث برقم الهاتف أو اسم العميل..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent">
+                            <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
+                        </div>
+                        <div id="admin-users-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
                     </div>
-                    <div id="admin-users-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+
+                    <div class="pt-6 border-t border-gray-200">
+                        <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-gray-500"></i> الطلبات السابقة (المنجزة)</h2>
+                        <div id="previous-orders-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <!-- Previous orders injected here -->
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Menu Management Section -->
+                <div id="admin-menu-sec" class="hidden space-y-6">
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-sm text-blue-800 font-medium">
+                        <p><i data-lucide="info" class="w-5 h-5 inline mb-1"></i> <b>ملاحظة هامة:</b> لحين الانتهاء من تحديث "تطبيق العميل" ليقرأ من قاعدة البيانات، سيتم حفظ هذه المنتجات في السيرفر ولكن لن تظهر للعملاء فوراً. استخدمها الآن لتجهيز قائمة منتجاتك.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Add Restaurant -->
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-[#002d74] mb-4">إضافة مطعم / قسم جديد</h3>
+                            <div class="space-y-3">
+                                <input type="text" id="new-rest-name" placeholder="اسم المطعم (مثال: سناكات، الحموي...)" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                <input type="text" id="new-rest-desc" placeholder="وصف قصير" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                <input type="text" id="new-rest-img" placeholder="رابط صورة الشعار" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                <button onclick="window.addRestaurant()" class="w-full bg-[#002d74] text-white py-3 rounded-xl font-bold shadow hover:bg-blue-900 transition-colors">إضافة المطعم</button>
+                            </div>
+                        </div>
+
+                        <!-- Add Product -->
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-[#002d74] mb-4">إضافة منتج جديد</h3>
+                            <div class="space-y-3">
+                                <input type="text" id="new-prod-name" placeholder="اسم المنتج" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                <div class="flex gap-2">
+                                    <input type="number" step="0.01" id="new-prod-price" placeholder="السعر (د.أ)" class="w-1/2 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                    <input type="text" id="new-prod-rest" placeholder="اسم المطعم التابع له" class="w-1/2 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                </div>
+                                <input type="text" id="new-prod-desc" placeholder="وصف المنتج والمكونات" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                <input type="text" id="new-prod-img" placeholder="رابط صورة المنتج" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50">
+                                <button onclick="window.addProduct()" class="w-full bg-[#00839b] text-white py-3 rounded-xl font-bold shadow hover:bg-[#005f73] transition-colors">إضافة المنتج</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
     <!-- Admin Wallet Edit Modal -->
     <div id="admin-wallet-modal" class="modal fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-         <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl text-center transform scale-95 transition-all">
+         <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl text-center transform scale-95 transition-all">
             <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i data-lucide="coins" class="w-8 h-8"></i>
             </div>
-            <h3 class="text-xl font-bold text-[#002d74] mb-1">تعديل رصيد المحفظة</h3>
+            <h3 class="text-xl font-bold text-[#002d74] mb-1">تعديل رصيد ومستحقات</h3>
             <p id="wallet-edit-phone" class="text-sm text-gray-500 mb-6 font-semibold" dir="ltr"></p>
-            <div class="space-y-3">
-                <div class="relative">
-                    <input type="number" step="0.01" id="wallet-edit-balance" placeholder="0.00" class="w-full p-4 border-2 border-green-200 rounded-xl outline-none focus:border-green-500 bg-green-50 font-black text-center text-green-700 text-2xl pr-12">
-                    <span class="absolute right-4 top-5 text-green-600 font-bold">د.أ</span>
+            <div class="space-y-4">
+                <div class="text-right">
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">الرصيد المتاح للعميل (+)</label>
+                    <input type="number" step="0.01" id="wallet-edit-balance" placeholder="0.00" class="w-full p-3 border-2 border-green-200 rounded-xl outline-none focus:border-green-500 bg-green-50 font-black text-center text-green-700 text-xl">
+                </div>
+                <div class="text-right">
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">المستحقات على العميل (-)</label>
+                    <input type="number" step="0.01" id="wallet-edit-debt" placeholder="0.00" class="w-full p-3 border-2 border-red-200 rounded-xl outline-none focus:border-red-500 bg-red-50 font-black text-center text-red-700 text-xl">
                 </div>
                 <button id="btn-save-wallet" onclick="window.saveAdminWallet()" class="w-full bg-[#00839b] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005f73] transition-colors text-lg mt-2">حفظ التغييرات</button>
                 <button class="close-modal w-full text-gray-500 hover:bg-gray-100 py-3 rounded-xl text-sm font-bold transition-colors border border-gray-200">إلغاء الأمر</button>
@@ -125,9 +207,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, collection, updateDoc, getDocs, addDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Same Configuration as the main app
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'farah-snacks-v3';
         const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyCHJ4leiSUZAnzA6NQE-DkJDv_Z34VQXLU",
@@ -137,10 +219,12 @@
             messagingSenderId: "395153655294",
             appId: "1:395153655294:web:60937a81930e7db1e56caf"
         };
-        const ADMIN_PASS = '4522'; // The new password you requested
+        const ADMIN_PASS = '4522'; 
 
         const PATH_ORDERS = `artifacts/${APP_ID}/public/data/orders`;
         const PATH_PROFILES = `artifacts/${APP_ID}/public/data/profiles`;
+        const PATH_RESTAURANTS = `artifacts/${APP_ID}/public/data/restaurants`;
+        const PATH_PRODUCTS = `artifacts/${APP_ID}/public/data/menu_products`;
 
         let appState = {
             db: null,
@@ -170,12 +254,15 @@
         window.toggleModal = toggleModal;
         document.querySelectorAll('.close-modal').forEach(b => b.onclick = (e) => toggleModal(e.target.closest('.modal').id.replace('-modal',''), false));
 
-        // Initialize Firebase ONLY (No Auth needed for admin reading public data if rules allow, or assuming local dev)
         const initFirebase = async () => {
             try {
                 const app = initializeApp(FIREBASE_CONFIG);
                 appState.db = getFirestore(app);
-                // Check if already logged in via localStorage
+                const auth = getAuth(app);
+                
+                // تسجيل الدخول المجهول لمنع أخطاء الصلاحيات
+                await signInAnonymously(auth);
+
                 if (localStorage.getItem('admin_logged_in') === 'true') {
                     showDashboard();
                 }
@@ -208,10 +295,15 @@
             showToast("تم تسجيل الخروج", "success");
         };
 
-        // Listen for Enter key on password input
         document.getElementById('admin-password-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                window.adminLogin();
+            if (e.key === 'Enter') window.adminLogin();
+        });
+
+        // Global Shortcut
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if(!appState.isLoggedIn) toggleModal('admin-auth', true);
             }
         });
 
@@ -241,6 +333,7 @@
                 const all = []; snap.forEach(d => all.push({id: d.id, ...d.data()}));
                 appState.adminAllOrders = all;
                 window.renderAdminOrders();
+                window.renderPreviousOrders();
             }, (error) => {
                 console.error("Error listening to orders:", error);
             });
@@ -249,35 +342,35 @@
         window.switchAdminTab = (t) => {
             document.getElementById('admin-orders-sec').classList.toggle('hidden', t!=='orders');
             document.getElementById('admin-users-sec').classList.toggle('hidden', t!=='users');
+            document.getElementById('admin-menu-sec').classList.toggle('hidden', t!=='menu');
             
-            const tabOrders = document.getElementById('tab-orders');
-            const tabUsers = document.getElementById('tab-users');
-            
-            if (t === 'orders') {
-                tabOrders.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors";
-                tabUsers.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors";
-            } else {
-                tabUsers.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors";
-                tabOrders.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors";
-            }
+            const tabs = ['orders', 'users', 'menu'];
+            tabs.forEach(tab => {
+                const el = document.getElementById(`tab-${tab}`);
+                if(tab === t) {
+                    el.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex items-center gap-3 transition-colors";
+                } else {
+                    el.className = "flex-1 md:flex-none p-4 font-bold text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex items-center gap-3 transition-colors";
+                }
+            });
         };
 
         window.renderAdminOrders = () => {
             const sec = document.getElementById('orders-list-container');
-            const sorted = appState.adminAllOrders.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            // Filter active orders only
+            const activeOrders = appState.adminAllOrders.filter(o => o.status !== 'تم توصيل الطلب بنجاح').sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
             
-            if (sorted.length === 0) {
-                sec.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400"><i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i><p class="font-bold text-lg">لا توجد طلبات حتى الآن</p></div>';
+            if (activeOrders.length === 0) {
+                sec.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400"><i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i><p class="font-bold text-lg">لا توجد طلبات قيد التنفيذ</p></div>';
                 if(window.lucide) lucide.createIcons();
                 return;
             }
 
-            sec.innerHTML = sorted.map(o => {
+            sec.innerHTML = activeOrders.map(o => {
                 let statusBg = 'bg-gray-100 text-gray-600';
-                if(o.status === 'قيد الانتظار') statusBg = 'bg-yellow-100 text-yellow-700';
-                if(o.status === 'قيد التحضير') statusBg = 'bg-orange-100 text-orange-700';
-                if(o.status === 'في الطريق') statusBg = 'bg-blue-100 text-blue-700';
-                if(o.status === 'تم التوصيل') statusBg = 'bg-green-100 text-green-700';
+                if(o.status === 'بانتظار قبول الطلب' || o.status === 'قيد الانتظار') statusBg = 'bg-yellow-100 text-yellow-700';
+                if(o.status === 'تم قبول الطلب' || o.status === 'قيد التحضير') statusBg = 'bg-orange-100 text-orange-700';
+                if(o.status === 'تم استلام الطلب' || o.status === 'قيد التوصيل' || o.status === 'في الطريق') statusBg = 'bg-blue-100 text-blue-700';
 
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-[#00839b]/30 transition-all" onclick="window.showAdminOrderDetails('${o.id}')">
@@ -295,6 +388,25 @@
                 </div>`;
             }).join('');
             if(window.lucide) lucide.createIcons();
+        };
+
+        window.renderPreviousOrders = () => {
+            const sec = document.getElementById('previous-orders-list');
+            const completedOrders = appState.adminAllOrders.filter(o => o.status === 'تم توصيل الطلب بنجاح').sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            
+            if (completedOrders.length === 0) {
+                sec.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p class="font-bold text-sm">لا توجد طلبات سابقة منجزة</p></div>';
+                return;
+            }
+
+            sec.innerHTML = completedOrders.map(o => `
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 cursor-pointer hover:bg-white transition-colors opacity-80" onclick="window.showAdminOrderDetails('${o.id}')">
+                    <div class="flex justify-between items-center mb-1">
+                        <h4 class="font-bold text-gray-700">${o.customerName} <span class="text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded">مكتمل</span></h4>
+                        <span class="font-black text-gray-500">${o.total.toFixed(2)} د.أ</span>
+                    </div>
+                    <p class="text-xs text-gray-400">${new Date(o.createdAt?.toMillis() || Date.now()).toLocaleDateString('ar-EG')}</p>
+                </div>`).join('');
         };
 
         window.showAdminOrderDetails = (orderId) => {
@@ -353,10 +465,12 @@
                     <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
                         <label class="font-bold text-sm mb-3 text-gray-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[#00839b]"></i> تحديث حالة الطلب الآن:</label>
                         <select onchange="window.updateOrderStatus('${o.id}', this.value)" class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none transition-all text-[#002d74] text-lg">
-                            <option ${o.status==='قيد الانتظار'?'selected':''}>قيد الانتظار</option>
-                            <option ${o.status==='قيد التحضير'?'selected':''}>قيد التحضير</option>
-                            <option ${o.status==='في الطريق'?'selected':''}>في الطريق</option>
-                            <option ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+                            <option ${o.status==='بانتظار قبول الطلب'?'selected':''}>بانتظار قبول الطلب</option>
+                            <option ${o.status==='تم قبول الطلب'?'selected':''}>1. تم قبول الطلب</option>
+                            <option ${o.status==='قيد التحضير'?'selected':''}>2. قيد التحضير</option>
+                            <option ${o.status==='تم استلام الطلب'?'selected':''}>3. تم استلام الطلب (للمندوب)</option>
+                            <option ${o.status==='قيد التوصيل'?'selected':''}>4. قيد التوصيل (في الطريق)</option>
+                            <option ${o.status==='تم توصيل الطلب بنجاح'?'selected':''}>5. تم توصيل الطلب بنجاح</option>
                         </select>
                     </div>
                 </div>
@@ -374,6 +488,11 @@
                 const o = appState.adminAllOrders.find(x => x.id === id);
                 if(o) o.status = s;
                 window.renderAdminOrders();
+                window.renderPreviousOrders(); // refresh in case it moved to completed
+                
+                if(s === 'تم توصيل الطلب بنجاح') {
+                    setTimeout(() => toggleModal('admin-order-details', false), 1000);
+                }
             } catch(e) {
                 console.error(e);
                 showToast("حدث خطأ في التحديث", "error");
@@ -401,41 +520,84 @@
                 return;
             }
 
-            list.innerHTML = filtered.map(u => `
+            list.innerHTML = filtered.map(u => {
+                const debtHtml = (u.debt && u.debt > 0) ? `<p class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg inline-block mr-1">المستحقات: ${u.debt.toFixed(2)} د.أ</p>` : '';
+                return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
                     <div>
                         <p class="font-bold text-base text-[#002d74] flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${u.name||'بدون اسم'}</p>
                         <p class="text-xs text-gray-500 mt-1 mb-2 font-medium" dir="ltr">${u.phone||'لا يوجد رقم'}</p>
                         <p class="text-sm font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg inline-block">الرصيد: ${(u.balance||0).toFixed(2)} د.أ</p>
+                        ${debtHtml}
                     </div>
-                    <button onclick="window.openAdminWallet('${u.uid}', '${u.phone||u.name}', ${u.balance||0})" class="bg-[#00839b] hover:bg-[#002d74] transition-colors text-white p-3 rounded-xl shadow-sm" title="تعديل المحفظة">
+                    <button onclick="window.openAdminWallet('${u.uid}', '${u.phone||u.name}', ${u.balance||0}, ${u.debt||0})" class="bg-[#00839b] hover:bg-[#002d74] transition-colors text-white p-3 rounded-xl shadow-sm" title="تعديل المحفظة">
                         <i data-lucide="edit-3" class="w-5 h-5"></i>
                     </button>
-                </div>`).join('');
+                </div>`;
+            }).join('');
             if(window.lucide) lucide.createIcons();
         };
 
-        window.openAdminWallet = (uid, nameOrPhone, bal) => {
+        window.openAdminWallet = (uid, nameOrPhone, bal, debt) => {
             appState.editingUser = uid;
             document.getElementById('wallet-edit-phone').textContent = nameOrPhone;
             document.getElementById('wallet-edit-balance').value = bal;
+            document.getElementById('wallet-edit-debt').value = debt || 0;
             toggleModal('admin-wallet', true);
         };
 
         window.saveAdminWallet = async () => {
             const bal = parseFloat(document.getElementById('wallet-edit-balance').value) || 0;
+            const debt = parseFloat(document.getElementById('wallet-edit-debt').value) || 0;
             const btn = document.getElementById('btn-save-wallet');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
             try {
-                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { balance: bal });
-                const u = appState.adminAllUsers.find(x=>x.uid===appState.editingUser); if(u) u.balance = bal;
+                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { balance: bal, debt: debt });
+                const u = appState.adminAllUsers.find(x=>x.uid===appState.editingUser); 
+                if(u) { u.balance = bal; u.debt = debt; }
                 window.renderAdminUsers(); 
                 toggleModal('admin-wallet', false); 
-                showToast("تم شحن رصيد العميل بنجاح", "success");
+                showToast("تم تحديث محفظة العميل بنجاح", "success");
             } catch(e) { 
                 showToast("خطأ بالاتصال", "error"); 
             }
             btn.disabled = false; btn.textContent = 'حفظ التغييرات';
+        };
+
+        // Dynamic Menu Functions (Saves to DB, but requires client app update to read)
+        window.addRestaurant = async () => {
+            if(!appState.db) return;
+            const name = document.getElementById('new-rest-name').value.trim();
+            const desc = document.getElementById('new-rest-desc').value.trim();
+            const img = document.getElementById('new-rest-img').value.trim();
+            if(!name) return showToast('أدخل اسم المطعم', 'error');
+
+            try {
+                await addDoc(collection(appState.db, PATH_RESTAURANTS), { name, desc, image: img, bg: 'bg-white', createdAt: serverTimestamp() });
+                showToast('تم حفظ المطعم في قاعدة البيانات', 'success');
+                document.getElementById('new-rest-name').value = '';
+                document.getElementById('new-rest-desc').value = '';
+                document.getElementById('new-rest-img').value = '';
+            } catch(e) { showToast('خطأ في الحفظ', 'error'); console.error(e); }
+        };
+
+        window.addProduct = async () => {
+            if(!appState.db) return;
+            const name = document.getElementById('new-prod-name').value.trim();
+            const price = parseFloat(document.getElementById('new-prod-price').value) || 0;
+            const rest = document.getElementById('new-prod-rest').value.trim();
+            const desc = document.getElementById('new-prod-desc').value.trim();
+            const img = document.getElementById('new-prod-img').value.trim();
+            if(!name || !rest) return showToast('الاسم والمطعم مطلوبان', 'error');
+
+            try {
+                await addDoc(collection(appState.db, PATH_PRODUCTS), { name, price, restaurant: rest, ingredients: desc, image: img, currency: 'د.أ', category: 'المطاعم', hideFromAll: true, createdAt: serverTimestamp() });
+                showToast('تم حفظ المنتج في قاعدة البيانات', 'success');
+                document.getElementById('new-prod-name').value = '';
+                document.getElementById('new-prod-price').value = '';
+                document.getElementById('new-prod-desc').value = '';
+                document.getElementById('new-prod-img').value = '';
+            } catch(e) { showToast('خطأ في الحفظ', 'error'); console.error(e); }
         };
 
         // Start

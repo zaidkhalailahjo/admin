@@ -279,6 +279,11 @@
             document.getElementById('dashboard-screen').classList.remove('hidden');
             document.getElementById('dashboard-screen').classList.add('flex');
             initDataListeners();
+            
+            // Request Notification Permission
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
         };
 
         const initDataListeners = () => {
@@ -293,6 +298,16 @@
                 if (hasNew && appState.isLoggedIn) {
                     showToast("طلب جديد! تفقد القائمة", "success");
                     try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play(); } catch(e){}
+                    
+                    // Web Push Notification for background tab
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        try {
+                            new Notification("طلب جديد فرح سناكس!", {
+                                body: "لقد وصلك طلب جديد الآن، تفقد لوحة الإدارة.",
+                                icon: "https://uploads.onecompiler.io/43n8uttmw/448872dja/WhatsApp_Image_2025-12-21_at_11.54.43_AM-removebg-preview.png"
+                            });
+                        } catch(e) {}
+                    }
                 }
                 appState.adminAllOrders = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 window.renderAdminOrders();
@@ -586,17 +601,22 @@
                 const statusColor = isResolved ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700';
                 const typeLabel = f.type === 'complaint' ? 'شكوى 🚨' : 'اقتراح 💡';
                 return `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative">
                     <div class="flex justify-between items-start mb-3 border-b pb-3 border-gray-50">
                         <div>
                             <h4 class="font-bold text-[#002d74] text-sm flex items-center gap-1"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${f.customerName}</h4>
                             <p class="text-xs text-gray-500 font-medium mt-1 mb-1" dir="ltr">${f.phone}</p>
                             <span class="text-xs font-bold text-gray-600 block">${typeLabel}</span>
                         </div>
-                        <select onchange="window.updateFeedbackStatus('${f.id}', this.value)" class="text-xs font-bold px-3 py-2 rounded-xl outline-none border focus:ring-2 focus:ring-[#00839b] ${statusColor} cursor-pointer shadow-sm">
-                            <option value="يتم حلها" ${!isResolved ? 'selected' : ''}>يتم حلها</option>
-                            <option value="تم حلها" ${isResolved ? 'selected' : ''}>تم حلها</option>
-                        </select>
+                        <div class="flex items-center gap-2">
+                            <select onchange="window.updateFeedbackStatus('${f.id}', this.value)" class="text-xs font-bold px-3 py-2 rounded-xl outline-none border focus:ring-2 focus:ring-[#00839b] ${statusColor} cursor-pointer shadow-sm">
+                                <option value="يتم حلها" ${!isResolved ? 'selected' : ''}>يتم حلها</option>
+                                <option value="تم حلها" ${isResolved ? 'selected' : ''}>تم حلها</option>
+                            </select>
+                            <button onclick="window.deleteFeedback('${f.id}', event)" class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-xl transition-colors shadow-sm" title="حذف الرسالة">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                     <p class="text-sm text-gray-700 leading-relaxed font-medium bg-gray-50 p-4 rounded-xl border border-gray-100">${f.content}</p>
                 </div>
@@ -610,6 +630,16 @@
                 await updateDoc(doc(appState.db, PATH_FEEDBACK, id), { status: s });
                 showToast('تم تحديث حالة الرسالة لتعكس عند العميل', 'success');
             } catch(e) { showToast('خطأ في التحديث', 'error'); }
+        };
+
+        window.deleteFeedback = async (id, event) => {
+            if(event) event.stopPropagation();
+            if(confirm('هل أنت متأكد من حذف هذه الرسالة نهائياً؟')) {
+                try {
+                    await deleteDoc(doc(appState.db, PATH_FEEDBACK, id));
+                    showToast('تم حذف الرسالة بنجاح', 'success');
+                } catch(e) { showToast('حدث خطأ أثناء الحذف', 'error'); }
+            }
         };
 
         // Start

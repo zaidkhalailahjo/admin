@@ -218,6 +218,22 @@
          </div>
     </div>
 
+    <!-- Admin Edit Employee Modal -->
+    <div id="admin-employee-modal" class="modal fixed inset-0 z-[230] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden">
+         <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-[#002d74]">تعديل بيانات الموظف</h3>
+                <button class="close-modal p-1 bg-gray-100 rounded-full hover:bg-gray-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div><label class="text-xs font-bold text-gray-700 mb-1 block">كلمة المرور الجديدة</label><input type="text" id="emp-edit-pass" class="w-full p-3 border border-gray-200 focus:ring-2 focus:ring-[#00839b] outline-none rounded-xl font-bold"></div>
+                <div><label class="text-xs font-bold text-gray-700 mb-1 block">الطلبات المكتملة (إضافة للعدد)</label><input type="number" id="emp-edit-comp" class="w-full p-3 border border-gray-200 focus:ring-2 focus:ring-[#00839b] outline-none rounded-xl font-bold"></div>
+                <div><label class="text-xs font-bold text-gray-700 mb-1 block">الطلبات الملغية (إضافة للعدد)</label><input type="number" id="emp-edit-canc" class="w-full p-3 border border-gray-200 focus:ring-2 focus:ring-[#00839b] outline-none rounded-xl font-bold"></div>
+                <button onclick="window.saveEmployeeEdit()" class="w-full bg-[#002d74] text-white py-3 rounded-xl font-bold shadow-md hover:bg-[#001d4a] mt-2">حفظ التغييرات</button>
+            </div>
+         </div>
+    </div>
+
     <!-- Admin Order Details Modal -->
     <div id="admin-order-details-modal" class="modal fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
          <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
@@ -256,8 +272,13 @@
             adminAllOrders: [],
             adminAllUsers: [],
             adminAllFeedback: [],
-            adminEmployees: [{id: 'emp_1', name: 'راشد'}], // Default Employee
+            adminEmployees: [
+                {id: 'admin', name: 'الادمن', password: 'admin', manualCompleted: 0, manualCanceled: 0},
+                {id: 'emp_1', name: 'راشد', password: '123', manualCompleted: 0, manualCanceled: 0},
+                {id: 'emp_2', name: 'قصي', password: '123', manualCompleted: 0, manualCanceled: 0}
+            ],
             editingUser: null,
+            editingEmployee: null,
             isLoggedIn: false,
             lastViewedUsers: parseInt(localStorage.getItem('viewedUsersCount') || '0')
         };
@@ -505,14 +526,19 @@
             const o = appState.adminAllOrders.find(x => x.id === orderId);
             if(!o) return;
             
-            const itemsHtml = o.items.map(i => `
-                <div class="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 mb-2 shadow-sm">
+            const itemsHtml = o.items.map((i, idx) => `
+                <div class="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 mb-2 shadow-sm ${i.isAvailable === false ? 'opacity-50' : ''}">
                     <img src="${i.product.image}" class="w-14 h-14 object-contain rounded-xl bg-gray-50 p-1">
                     <div class="flex-grow">
-                        <p class="font-bold text-sm text-[#002d74]">${i.product.name} ${i.option ? `<span class="text-[#00839b]">(${i.option})</span>` : ''}</p>
+                        <p class="font-bold text-sm ${i.isAvailable === false ? 'line-through text-gray-400' : 'text-[#002d74]'}">${i.product.name} ${i.option ? `<span class="text-[#00839b]">(${i.option})</span>` : ''}</p>
                         <p class="text-xs text-gray-500 font-bold mt-1">الكمية: <span class="text-gray-800 bg-gray-100 px-2 py-0.5 rounded">${i.quantity}</span></p>
                     </div>
-                    <div class="font-black text-[#00839b] text-lg">${(i.quantity * i.product.price).toFixed(2)}</div>
+                    <div class="flex flex-col items-end gap-1">
+                        <div class="font-black ${i.isAvailable === false ? 'line-through text-gray-400' : 'text-[#00839b]'} text-lg">${(i.quantity * i.product.price).toFixed(2)}</div>
+                        <button onclick="window.toggleItemAvailability('${o.id}', ${idx})" class="text-[10px] px-2 py-1 rounded font-bold ${i.isAvailable === false ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'} transition-colors">
+                            ${i.isAvailable === false ? 'تغيير لموجود' : 'غير موجود'}
+                        </button>
+                    </div>
                 </div>
             `).join('');
 
@@ -523,8 +549,12 @@
                 deliveryRowHtml = `<div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span><span class="line-through text-red-400 mr-1 text-xs font-normal">0.10</span> <span class="text-green-600 font-bold">+ 0.00 د.أ</span></span></div>`;
             }
 
+            const empObj = appState.adminEmployees.find(e => e.id === o.handledBy);
+            const handledByName = empObj ? empObj.name : 'الادمن';
+
             const content = `
                 <div class="space-y-4">
+                    ${o.handledBy ? `<div class="bg-blue-100 text-[#002d74] p-3 rounded-2xl text-sm font-bold text-center border border-blue-200 flex justify-center items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> تم أخذ الطلب بواسطة: ${handledByName}</div>` : ''}
                     <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-1 h-full ${o.paymentMethod === 'wallet' ? 'bg-green-500' : 'bg-gray-400'}"></div>
                         <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-3">
@@ -580,7 +610,8 @@
                             ${appState.adminEmployees.map(emp => `<option value="${emp.id}" ${o.handledBy === emp.id ? 'selected' : ''}>${emp.name}</option>`).join('')}
                         </select>
 
-                        <button onclick="window.confirmOrderStatusUpdate('${o.id}')" class="w-full bg-[#00839b] text-white py-3 rounded-xl font-bold shadow hover:bg-[#005f73] transition-colors">حفظ الحالة</button>
+                        <button onclick="window.confirmOrderStatusUpdate('${o.id}')" class="w-full bg-[#00839b] text-white py-3 rounded-xl font-bold shadow hover:bg-[#005f73] transition-colors mb-2">حفظ الحالة</button>
+                        <button onclick="window.cancelOrderRed('${o.id}')" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold shadow hover:bg-red-700 transition-colors flex justify-center items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> الغاء</button>
                     </div>
                 </div>
             `;
@@ -614,6 +645,55 @@
             } catch(e) {
                 console.error(e);
                 showToast("حدث خطأ في التحديث", "error");
+            }
+        };
+
+        window.toggleItemAvailability = async (orderId, itemIndex) => {
+            const order = appState.adminAllOrders.find(o => o.id === orderId);
+            if(!order) return;
+            const items = [...order.items];
+            items[itemIndex].isAvailable = items[itemIndex].isAvailable === false ? true : false;
+            
+            let newTotalProducts = 0;
+            items.forEach(i => { if(i.isAvailable !== false) newTotalProducts += (i.quantity * i.product.price); });
+            const finalTotal = newTotalProducts + (order.fees?.delivery||0) + (order.fees?.service||0) - (order.fees?.discount||0);
+            
+            try {
+                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { items: items, total: finalTotal });
+                showToast(items[itemIndex].isAvailable ? "المنتج متوفر الآن" : "المنتج غير متوفر", "success");
+            } catch(e) { showToast("خطأ في التحديث", "error"); }
+        };
+
+        window.cancelOrderRed = async (orderId) => {
+            if(confirm("هل انت متاكد من الغاء الطلب نعم او لا")) {
+                try {
+                    const empId = document.getElementById(`employee-select-${orderId}`)?.value || 'admin';
+                    await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { status: 'مرفوض', handledBy: empId });
+                    showToast("تم الغاء الطلب وانتقاله للملغية", "success");
+                    toggleModal('admin-order-details', false);
+                } catch(e) { showToast("خطأ في الالغاء", "error"); }
+            }
+        };
+
+        window.openEditEmployee = (empId) => {
+            const emp = appState.adminEmployees.find(e => e.id === empId);
+            if(!emp) return;
+            appState.editingEmployee = empId;
+            document.getElementById('emp-edit-pass').value = emp.password || '';
+            document.getElementById('emp-edit-comp').value = emp.manualCompleted || 0;
+            document.getElementById('emp-edit-canc').value = emp.manualCanceled || 0;
+            toggleModal('admin-employee', true);
+        };
+
+        window.saveEmployeeEdit = () => {
+            const emp = appState.adminEmployees.find(e => e.id === appState.editingEmployee);
+            if(emp) {
+                emp.password = document.getElementById('emp-edit-pass').value;
+                emp.manualCompleted = parseInt(document.getElementById('emp-edit-comp').value) || 0;
+                emp.manualCanceled = parseInt(document.getElementById('emp-edit-canc').value) || 0;
+                window.renderAdminEmployees();
+                toggleModal('admin-employee', false);
+                showToast("تم حفظ تعديلات الموظف", "success");
             }
         };
 
@@ -787,11 +867,20 @@
                     }
                 }
 
+                const relatedOrder = appState.adminAllOrders.find(o => o.id === f.orderId);
+                let deliveredByTxt = '';
+                if(relatedOrder && relatedOrder.handledBy) {
+                    const empObj = appState.adminEmployees.find(e => e.id === relatedOrder.handledBy);
+                    deliveredByTxt = `<span class="text-[10px] bg-[#00839b]/10 text-[#00839b] px-2 py-0.5 rounded font-bold mr-2">وصله: ${empObj ? empObj.name : 'الادمن'}</span>`;
+                }
+
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative">
                     <div class="flex justify-between items-start mb-3 border-b pb-3 border-gray-50">
                         <div>
-                            <h4 class="font-bold text-[#002d74] text-sm flex items-center gap-1"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${f.customerName}</h4>
+                            <h4 class="font-bold text-[#002d74] text-sm flex items-center gap-1">
+                                <i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${f.customerName} ${deliveredByTxt}
+                            </h4>
                             <p class="text-xs text-gray-500 font-medium mt-1 mb-1" dir="ltr">${f.phone}</p>
                             <div class="mt-2">${starsHtml}</div>
                         </div>
@@ -845,7 +934,12 @@
                 const empOrders = appState.adminAllOrders.filter(o => o.handledBy === emp.id);
                 const acceptedOrders = empOrders.filter(o => o.status === 'تم توصيل الطلب بنجاح' || o.status === 'تم التوصيل' || o.status.includes('تم استلام'));
                 const rejectedOrders = empOrders.filter(o => o.status === 'مرفوض');
+                
+                const finalCompleted = acceptedOrders.length + (emp.manualCompleted || 0);
+                const finalCanceled = rejectedOrders.length + (emp.manualCanceled || 0);
+                
                 const totalValue = acceptedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+                const deliverySales = acceptedOrders.reduce((sum, o) => sum + (o.fees?.delivery || 0) + (o.fees?.service || 0), 0);
                 
                 const empRatings = appState.adminAllFeedback.filter(f => f.type === 'rating' && empOrders.find(o => o.id === f.orderId));
                 let avgRating = 0;
@@ -858,19 +952,24 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                     <div class="flex justify-between items-center mb-4 border-b pb-3 border-gray-50">
                         <h4 class="font-bold text-[#002d74] text-lg flex items-center gap-2"><i data-lucide="user-circle" class="text-gray-400"></i> ${emp.name}</h4>
+                        <button onclick="window.openEditEmployee('${emp.id}')" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i> تعديل</button>
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-sm font-bold text-gray-600">
                         <div class="bg-green-50 p-3 rounded-xl border border-green-100 flex flex-col justify-center items-center text-center">
-                            <span class="text-green-700 text-lg mb-1">${acceptedOrders.length}</span>
+                            <span class="text-green-700 text-lg mb-1">${finalCompleted}</span>
                             <span class="text-xs text-green-600">مكتمل</span>
                         </div>
                         <div class="bg-red-50 p-3 rounded-xl border border-red-100 flex flex-col justify-center items-center text-center">
-                            <span class="text-red-700 text-lg mb-1">${rejectedOrders.length}</span>
+                            <span class="text-red-700 text-lg mb-1">${finalCanceled}</span>
                             <span class="text-xs text-red-600">ملغي</span>
                         </div>
                         <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex flex-col justify-center items-center text-center col-span-2">
                             <span class="text-[#002d74] text-xl mb-1">${totalValue.toFixed(2)} د.أ</span>
                             <span class="text-xs text-blue-600">إجمالي المبيعات</span>
+                        </div>
+                        <div class="bg-[#f0f9fa] p-3 rounded-xl border border-[#00839b]/20 flex flex-col justify-center items-center text-center col-span-2">
+                            <span class="text-[#00839b] text-xl mb-1">${deliverySales.toFixed(2)} د.أ</span>
+                            <span class="text-xs text-[#00839b]">إجمالي مبيعات التوصيل (شامل الرسوم)</span>
                         </div>
                         <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-100 flex flex-col justify-center items-center text-center col-span-2">
                             <span class="text-yellow-600 text-xl mb-1 flex items-center gap-1"><i data-lucide="star" class="w-4 h-4 fill-yellow-500"></i> ${avgRating > 0 ? avgRating : 'لا يوجد'}</span>

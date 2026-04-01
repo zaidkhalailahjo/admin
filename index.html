@@ -554,7 +554,7 @@
 
             const content = `
                 <div class="space-y-4">
-                    ${o.handledBy ? `<div class="bg-blue-100 text-[#002d74] p-3 rounded-2xl text-sm font-bold text-center border border-blue-200 flex justify-center items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> تم أخذ الطلب بواسطة: ${handledByName}</div>` : ''}
+                    ${o.handledBy ? `<div class="bg-blue-100 text-[#002d74] p-3 rounded-2xl text-lg font-bold text-center border border-blue-200 flex justify-center items-center gap-2 shadow-sm"><i data-lucide="check-circle" class="w-5 h-5"></i> تم التنفيذ بواسطة الموظف: ${handledByName}</div>` : `<div class="bg-orange-100 text-orange-700 p-3 rounded-2xl text-sm font-bold text-center border border-orange-200 flex justify-center items-center gap-2"><i data-lucide="clock" class="w-4 h-4"></i> بانتظار قبول أحد الموظفين</div>`}
                     <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-1 h-full ${o.paymentMethod === 'wallet' ? 'bg-green-500' : 'bg-gray-400'}"></div>
                         <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-3">
@@ -591,61 +591,11 @@
                         ${o.deductedFromWallet > 0 ? `<div class="flex justify-between text-blue-600 font-bold border-t border-gray-200 pt-2"><span>مخصوم من المحفظة:</span><span>- ${o.deductedFromWallet.toFixed(2)} د.أ</span></div>` : ''}
                         ${o.cashToCollect >= 0 ? `<div class="flex justify-between text-red-600 font-black text-xl"><span>المطلوب كاش:</span><span>${o.cashToCollect.toFixed(2)} د.أ</span></div>` : ''}
                     </div>
-
-                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                        <label class="font-bold text-sm mb-3 text-gray-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[#00839b]"></i> تحديث حالة الطلب الآن:</label>
-                        <select id="status-select-${o.id}" class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none transition-all text-[#002d74] text-lg mb-3">
-                            <option ${o.status==='بانتظار قبول الطلب'?'selected':''}>بانتظار قبول الطلب</option>
-                            <option ${o.status==='تم قبول الطلب'?'selected':''}>تم قبول الطلب</option>
-                            <option ${o.status==='قيد التحضير'?'selected':''}>قيد التحضير</option>
-                            <option ${o.status==='تم استلام الطلب'?'selected':''}>تم استلام الطلب</option>
-                            <option ${o.status==='قيد التوصيل'?'selected':''}>قيد التوصيل</option>
-                            <option ${o.status==='تم توصيل الطلب بنجاح'?'selected':''}>تم توصيل الطلب بنجاح</option>
-                            <option ${o.status==='مرفوض'?'selected':''}>مرفوض (إلغاء)</option>
-                        </select>
-                        
-                        <label class="font-bold text-sm mb-2 text-gray-700 flex items-center gap-2 mt-4 border-t pt-4"><i data-lucide="user-check" class="w-4 h-4 text-[#00839b]"></i> تم التنفيذ بواسطة (الموظف):</label>
-                        <select id="employee-select-${o.id}" class="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none mb-4">
-                            <option value="">-- اختر الموظف --</option>
-                            ${appState.adminEmployees.map(emp => `<option value="${emp.id}" ${o.handledBy === emp.id ? 'selected' : ''}>${emp.name}</option>`).join('')}
-                        </select>
-
-                        <button onclick="window.confirmOrderStatusUpdate('${o.id}')" class="w-full bg-[#00839b] text-white py-3 rounded-xl font-bold shadow hover:bg-[#005f73] transition-colors mb-2">حفظ الحالة</button>
-                        <button onclick="window.cancelOrderRed('${o.id}')" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold shadow hover:bg-red-700 transition-colors flex justify-center items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> الغاء</button>
-                    </div>
                 </div>
             `;
             document.getElementById('admin-order-details-content').innerHTML = content;
             if(window.lucide) lucide.createIcons();
             toggleModal('admin-order-details', true);
-        };
-
-        window.confirmOrderStatusUpdate = async (id) => {
-            const s = document.getElementById(`status-select-${id}`).value;
-            const empId = document.getElementById(`employee-select-${id}`).value;
-            
-            if(!empId && (s === 'تم توصيل الطلب بنجاح' || s === 'مرفوض' || s === 'تم قبول الطلب')) {
-                showToast("يرجى اختيار الموظف الذي تولى الطلب", "error");
-                return;
-            }
-
-            if (!appState.db) return;
-            try {
-                await updateDoc(doc(appState.db, PATH_ORDERS, id), { status: s, handledBy: empId });
-                showToast("تم تحديث الحالة للعميل", "success");
-                const o = appState.adminAllOrders.find(x => x.id === id);
-                if(o) { o.status = s; o.handledBy = empId; }
-                window.renderAdminOrders();
-                window.renderPreviousOrders(); 
-                window.renderAdminEmployees(); // Refresh stats
-
-                if(s === 'تم توصيل الطلب بنجاح' || s === 'مرفوض') {
-                    setTimeout(() => toggleModal('admin-order-details', false), 500);
-                }
-            } catch(e) {
-                console.error(e);
-                showToast("حدث خطأ في التحديث", "error");
-            }
         };
 
         window.toggleItemAvailability = async (orderId, itemIndex) => {
@@ -662,17 +612,6 @@
                 await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { items: items, total: finalTotal });
                 showToast(items[itemIndex].isAvailable ? "المنتج متوفر الآن" : "المنتج غير متوفر", "success");
             } catch(e) { showToast("خطأ في التحديث", "error"); }
-        };
-
-        window.cancelOrderRed = async (orderId) => {
-            if(confirm("هل انت متاكد من الغاء الطلب نعم او لا")) {
-                try {
-                    const empId = document.getElementById(`employee-select-${orderId}`)?.value || 'admin';
-                    await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { status: 'مرفوض', handledBy: empId });
-                    showToast("تم الغاء الطلب وانتقاله للملغية", "success");
-                    toggleModal('admin-order-details', false);
-                } catch(e) { showToast("خطأ في الالغاء", "error"); }
-            }
         };
 
         window.openEditEmployee = (empId) => {

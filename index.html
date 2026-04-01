@@ -328,11 +328,11 @@
     <!-- Admin Order Details Modal -->
     <div id="admin-order-details-modal" class="modal fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
          <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
-            <div class="p-5 bg-[#002d74] text-white flex justify-between items-center z-10 shadow-md">
-                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="receipt" class="w-6 h-6"></i> تفاصيل الطلب</h2>
-                <button class="close-modal p-2 rounded-full hover:bg-white/20 bg-white/10 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="p-4 bg-[#002d74] text-white flex justify-between items-center z-10 shadow-md">
+                <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="receipt" class="w-5 h-5"></i> تفاصيل الطلب</h2>
+                <button class="close-modal p-1.5 rounded-full hover:bg-white/20 bg-white/10 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="flex-grow overflow-y-auto p-5 bg-gray-50" id="admin-order-details-content">
+            <div class="flex-grow overflow-y-auto p-4 bg-gray-50" id="admin-order-details-content">
                 <!-- Details injected here -->
             </div>
          </div>
@@ -446,7 +446,6 @@
                 showDashboard();
                 showToast("مرحباً بك في لوحة الإدارة", "success");
             } else if (pass === '2012' || appState.adminEmployees.find(e => e.password === pass)) {
-                // If password is 2012 default to Rashed, or check dynamic DB password
                 let emp = appState.adminEmployees.find(e => e.password === pass);
                 if (!emp && pass === '2012') {
                     emp = appState.adminEmployees.find(e => e.id === 'emp_1') || { id: 'emp_1', name: 'راشد', role: 'employee', manualCompleted: 0, manualCanceled: 0 };
@@ -647,6 +646,30 @@
             });
         };
 
+        // --- Sequential Status Updates ---
+        window.advanceOrderStatus = async (orderId, newStatus, revert = false) => {
+            if(!appState.db) return;
+            const updateData = { status: newStatus };
+            if (revert) {
+                updateData.handledBy = null;
+            }
+            try {
+                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), updateData);
+                showToast(revert ? "تم إرجاع الطلب" : "تم تحديث الحالة", "success");
+                
+                if (appState.currentUser?.role === 'employee') window.renderEmployeeOrders();
+                else window.renderAdminOrders();
+
+                if(document.getElementById('admin-order-details-modal')?.classList.contains('active')) {
+                    if(newStatus === 'تم توصيل الطلب بنجاح' || revert) {
+                        toggleModal('admin-order-details', false);
+                    } else {
+                        window.showAdminOrderDetails(orderId);
+                    }
+                }
+            } catch(e) { showToast("خطأ في التحديث", "error"); }
+        };
+
         // --- Orders (Admin) ---
         window.renderAdminOrders = () => {
             const sec = document.getElementById('orders-list-container');
@@ -663,7 +686,7 @@
             sec.innerHTML = activeOrders.map(o => {
                 let statusBg = 'bg-gray-100 text-gray-600';
                 if(o.status === 'بانتظار قبول الطلب' || o.status === 'قيد الانتظار') statusBg = 'bg-yellow-100 text-yellow-700';
-                if(o.status === 'تم قبول الطلب' || o.status === 'قيد التحضير') statusBg = 'bg-orange-100 text-orange-700';
+                if(o.status === 'تم قبول الطلب' || o.status === 'قيد التحضير' || o.status === 'قيد التنفيذ') statusBg = 'bg-orange-100 text-orange-700';
                 if(o.status === 'تم استلام الطلب' || o.status === 'قيد التوصيل' || o.status === 'في الطريق') statusBg = 'bg-blue-100 text-blue-700';
 
                 return `
@@ -727,20 +750,23 @@
             const o = appState.adminAllOrders.find(x => x.id === orderId);
             if(!o) return;
             
-            const itemsHtml = o.items.map((i, idx) => `
-                <div class="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 mb-2 shadow-sm ${i.isAvailable === false ? 'opacity-50' : ''}">
-                    <img src="${i.product.image}" class="w-14 h-14 object-contain rounded-xl bg-gray-50 p-1">
-                    <div class="flex-grow">
-                        <p class="font-bold text-sm ${i.isAvailable === false ? 'line-through text-gray-400' : 'text-[#002d74]'}">${i.product.name} ${i.option ? `<span class="text-[#00839b]">(${i.option})</span>` : ''}</p>
-                        <p class="text-xs text-gray-500 font-bold mt-1">الكمية: <span class="text-gray-800 bg-gray-100 px-2 py-0.5 rounded">${i.quantity}</span></p>
+            const itemsHtml = (o.items || []).map((i, idx) => `
+                <div class="flex flex-col bg-white p-3 rounded-xl mb-2 border ${i.isAvailable === false ? 'bg-red-50 border-red-300 shadow-inner' : 'border-gray-200 shadow-sm'} transition-colors">
+                    <div class="flex items-center gap-3">
+                        <img src="${i.product?.image || ''}" class="w-10 h-10 rounded-lg object-contain bg-white border border-gray-100 ${i.isAvailable === false ? 'opacity-50 grayscale' : ''}">
+                        <div class="flex-grow">
+                            <span class="text-sm font-bold block ${i.isAvailable === false ? 'line-through text-red-500' : 'text-[#002d74]'}">${i.product?.name || 'منتج'} ${i.option ? `<span class="text-[#00839b] mx-1">(${i.option})</span>` : ''} <span class="text-[#00839b] mx-1">x${i.quantity || 1}</span></span>
+                            <span class="text-xs font-black ${i.isAvailable === false ? 'line-through text-red-400' : 'text-gray-600'}">${((i.product?.price || 0) * (i.quantity || 1)).toFixed(2)} د.أ</span>
+                        </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <div class="font-black ${i.isAvailable === false ? 'line-through text-gray-400' : 'text-[#00839b]'} text-lg">${(i.quantity * i.product.price).toFixed(2)}</div>
-                    </div>
+                    <button onclick="window.toggleItemAvailability('${o.id}', ${idx})" class="mt-3 text-xs w-full py-2 rounded-lg font-bold transition-all shadow-sm flex justify-center items-center gap-1.5 ${i.isAvailable === false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-100 text-red-600 border border-red-200 hover:bg-red-200'}">
+                        <i data-lucide="${i.isAvailable === false ? 'check-circle' : 'x-circle'}" class="w-4 h-4"></i> 
+                        ${i.isAvailable === false ? 'إرجاع المنتج (موجود)' : 'تحديد كـ "غير موجود"'}
+                    </button>
                 </div>
             `).join('');
 
-            const dateStr = o.createdAt?.toMillis ? new Date(o.createdAt.toMillis()).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : 'غير محدد';
+            const dateStr = getOrderDateStr(o.createdAt);
             
             let deliveryRowHtml = `<div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span>+ ${(o.fees?.delivery||0).toFixed(2)} د.أ</span></div>`;
             if(o.fees?.isFreeDelivery) {
@@ -750,10 +776,48 @@
             const empObj = appState.adminEmployees.find(e => e.id === o.handledBy);
             const handledByName = empObj ? empObj.name : 'الادمن';
 
+            // Sequential Action Buttons for Admin
+            let actionAreaHtml = '';
+            if (!o.handledBy || o.handledBy === '') {
+                actionAreaHtml = `
+                    <div class="bg-orange-100 text-orange-700 p-3 rounded-2xl text-sm font-bold text-center border border-orange-200 flex justify-center items-center gap-2 mb-4">
+                        <i data-lucide="clock" class="w-4 h-4"></i> بانتظار قبول أحد الموظفين
+                    </div>
+                    <button onclick="window.empAcceptOrder('${o.id}')" class="w-full bg-[#002d74] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#001d4a] transition-colors flex justify-center items-center gap-2 text-lg">
+                        <i data-lucide="hand" class="w-5 h-5"></i> أخذ الطلب لنفسي (الادمن)
+                    </button>
+                `;
+            } else if (o.handledBy === 'admin') {
+                let nextBtn = '';
+                if (o.status === 'تم قبول الطلب') {
+                    nextBtn = `<button onclick="window.advanceOrderStatus('${o.id}', 'قيد التنفيذ')" class="w-full bg-[#00839b] hover:bg-[#005f73] text-white py-3.5 rounded-xl font-bold transition-colors shadow-md text-lg mb-3">الطلب قيد التنفيذ</button>`;
+                } else if (o.status === 'قيد التنفيذ' || o.status === 'قيد التحضير') {
+                    nextBtn = `<button onclick="window.advanceOrderStatus('${o.id}', 'تم استلام الطلب')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md text-lg mb-3">تم استلام الطلب</button>`;
+                } else if (o.status === 'تم استلام الطلب' || o.status === 'قيد التوصيل') {
+                    nextBtn = `<button onclick="window.advanceOrderStatus('${o.id}', 'تم توصيل الطلب بنجاح')" class="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md flex justify-center items-center gap-2 text-lg mb-3"><i data-lucide="check" class="w-5 h-5"></i> تأكيد التوصيل</button>`;
+                }
+
+                actionAreaHtml = `
+                    <div class="bg-blue-100 text-[#002d74] p-3 rounded-2xl text-lg font-bold text-center border border-blue-200 flex justify-center items-center gap-2 shadow-sm mb-4">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i> الطلب بعهدتك (الادمن)
+                    </div>
+                    ${nextBtn}
+                    <button onclick="window.advanceOrderStatus('${o.id}', 'بانتظار قبول الطلب', true)" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-bold transition-colors shadow-sm flex justify-center items-center gap-2 text-sm">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> إرجاع الطلب للكل
+                    </button>
+                `;
+            } else {
+                actionAreaHtml = `
+                    <div class="bg-blue-100 text-[#002d74] p-3 rounded-2xl text-lg font-bold text-center border border-blue-200 flex justify-center items-center gap-2 shadow-sm mb-4">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i> تم التنفيذ بواسطة الموظف: ${handledByName}
+                    </div>
+                `;
+            }
+
             const content = `
                 <div class="space-y-4">
-                    ${o.handledBy ? `<div class="bg-blue-100 text-[#002d74] p-3 rounded-2xl text-lg font-bold text-center border border-blue-200 flex justify-center items-center gap-2 shadow-sm"><i data-lucide="check-circle" class="w-5 h-5"></i> تم التنفيذ بواسطة الموظف: ${handledByName}</div>` : `<div class="bg-orange-100 text-orange-700 p-3 rounded-2xl text-sm font-bold text-center border border-orange-200 flex justify-center items-center gap-2"><i data-lucide="clock" class="w-4 h-4"></i> بانتظار قبول أحد الموظفين</div>`}
-                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                    ${actionAreaHtml}
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden mt-4">
                         <div class="absolute top-0 left-0 w-1 h-full ${o.paymentMethod === 'wallet' ? 'bg-green-500' : 'bg-gray-400'}"></div>
                         <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-3">
                             <h4 class="font-bold text-xl text-[#002d74]"><i data-lucide="user-check" class="w-5 h-5 inline text-[#00839b] mr-1"></i> ${o.customerName}</h4>
@@ -762,13 +826,12 @@
                                 ${o.paymentMethod === 'wallet' ? 'دفع محفظة' : 'الدفع كاش'}
                             </span>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 text-sm font-medium">
-                            <div><span class="text-gray-400 block text-xs mb-1">وقت الطلب</span> ${dateStr}</div>
-                            <div><span class="text-gray-400 block text-xs mb-1">المنطقة</span> ${o.location}</div>
-                            <div class="col-span-2"><span class="text-gray-400 block text-xs mb-1">رقم الهاتف</span> <span dir="ltr">${o.phone || 'غير متوفر'}</span></div>
+                        <div class="space-y-2 text-sm font-medium">
+                            <p class="font-bold text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-[#00839b]"></i> الوقت: ${dateStr}</p>
+                            <a href="tel:${o.phone}" class="font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 flex items-center gap-2 hover:bg-blue-100 transition-colors" dir="ltr"><i data-lucide="phone-call" class="w-4 h-4"></i> ${o.phone || 'غير متوفر'}</a>
+                            ${o.exactLocation ? `<a href="${o.exactLocation}" target="_blank" class="font-bold text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-100 flex items-center gap-2 hover:bg-green-100 transition-colors"><i data-lucide="map-pin" class="w-4 h-4"></i> فتح موقع العميل (GPS)</a>` : `<p class="font-bold text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-[#00839b]"></i> ${o.location}</p>`}
+                            ${o.addressDetails ? `<p class="font-bold text-yellow-700 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-100"><span class="text-xs block text-yellow-600 mb-1">العنوان التفصيلي:</span> ${o.addressDetails}</p>` : ''}
                         </div>
-                        ${o.addressDetails ? `<div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-3"><span class="text-yellow-700 block text-xs mb-1 font-bold">العنوان التفصيلي:</span> <p class="text-gray-800 font-bold text-lg">${o.addressDetails}</p></div>` : ''}
-                        ${o.exactLocation ? `<a href="${o.exactLocation}" target="_blank" class="mt-4 w-full text-blue-600 hover:text-white hover:bg-blue-600 text-sm font-bold flex justify-center items-center gap-2 bg-blue-50 py-3 rounded-xl transition-colors border border-blue-100"><i data-lucide="map" class="w-4 h-4"></i> فتح الموقع الدقيق (GPS)</a>` : ''}
                     </div>
                     
                     <div>
@@ -796,40 +859,6 @@
             toggleModal('admin-order-details', true);
         };
 
-        // --- Employee Actions ---
-
-        window.empIgnoreOrder = (orderId) => {
-            if (!appState.ignoredOrders.includes(orderId)) {
-                appState.ignoredOrders.push(orderId);
-                localStorage.setItem('emp_ignored_orders', JSON.stringify(appState.ignoredOrders));
-                showToast("تم تجاهل الطلب بنجاح (مخفي من شاشتك فقط)", "success");
-                window.renderEmployeeOrders();
-            }
-        };
-
-        window.empAcceptOrder = async (orderId) => {
-            if(!appState.db) return;
-            try {
-                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { 
-                    status: 'تم قبول الطلب', 
-                    handledBy: appState.currentUser.id 
-                });
-                showToast("تم أخذ الطلب بعهدتك بنجاح", "success");
-            } catch(e) { showToast("خطأ في القبول", "error"); }
-        };
-
-        window.empCompleteOrder = async (orderId) => {
-            if(!appState.db) return;
-            if(confirm('هل أنت متأكد من تسليم الطلب للعميل وإنهاء المعاملة؟')) {
-                try {
-                    await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { 
-                        status: 'تم توصيل الطلب بنجاح' 
-                    });
-                    showToast("تم إكمال التوصيل بنجاح", "success");
-                } catch(e) { showToast("خطأ في الإكمال", "error"); }
-            }
-        };
-
         window.toggleItemAvailability = async (orderId, itemIndex) => {
             const order = appState.adminAllOrders.find(o => o.id === orderId);
             if(!order) return;
@@ -845,190 +874,6 @@
                 await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { items: items, total: finalTotal });
                 showToast(items[itemIndex].isAvailable ? "المنتج متوفر الآن" : "تم تعيين المنتج كغير موجود", "success");
             } catch(e) { showToast("خطأ في التحديث", "error"); }
-        };
-
-        window.renderEmployeeOrders = () => {
-            if(!appState.currentUser) return;
-            const secActive = document.getElementById('emp-my-orders-list');
-            const secNew = document.getElementById('emp-new-orders-list');
-            
-            const myActive = [];
-            const newOrFading = [];
-            const now = Date.now();
-
-            appState.adminAllOrders.forEach(o => {
-                if (!o.status) return;
-                if (o.status === 'تم توصيل الطلب بنجاح' || o.status === 'مرفوض') return;
-
-                if (o.handledBy === appState.currentUser.id && o.status !== 'بانتظار قبول الطلب') {
-                    myActive.push(o);
-                } else if (o.status === 'بانتظار قبول الطلب') {
-                    if (!appState.ignoredOrders.includes(o.id)) {
-                        newOrFading.push(o);
-                    }
-                } else if (o.handledBy && o.handledBy !== appState.currentUser.id) {
-                    if (!appState.ignoredOrders.includes(o.id)) {
-                        if (!appState.fadingOrders[o.id]) {
-                            appState.fadingOrders[o.id] = now;
-                        }
-                        if (now - appState.fadingOrders[o.id] < 7000) {
-                            newOrFading.push(o);
-                        }
-                    }
-                }
-            });
-
-            if (myActive.length === 0) {
-                secActive.innerHTML = '<div class="col-span-full bg-white p-6 rounded-2xl border text-center border-dashed border-gray-300"><p class="text-gray-400 text-sm font-bold">لا توجد طلبات قيد التنفيذ لديك حالياً</p></div>';
-            } else {
-                secActive.innerHTML = myActive.map(o => {
-                    const itemsHtml = (o.items || []).map((i, idx) => `
-                        <div class="flex justify-between items-center bg-white p-2 rounded-lg mb-2 border ${i.isAvailable === false ? 'opacity-60 border-red-200 bg-red-50' : 'border-gray-100 shadow-sm'}">
-                            <div class="flex items-center gap-2">
-                                <img src="${i.product?.image || ''}" class="w-8 h-8 rounded object-contain bg-gray-100">
-                                <span class="text-sm font-bold ${i.isAvailable === false ? 'line-through text-gray-400' : 'text-[#002d74]'}">${i.product?.name || 'منتج'} <span class="text-[#00839b]">x${i.quantity || 1}</span></span>
-                            </div>
-                            <button onclick="window.toggleItemAvailability('${o.id}', ${idx})" class="text-[10px] px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm ${i.isAvailable === false ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100'}">
-                                ${i.isAvailable === false ? 'تغيير لموجود' : 'غير موجود (نَفَذ)'}
-                            </button>
-                        </div>
-                    `).join('');
-
-                    return `
-                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-200 shadow-sm relative transition-all">
-                        <div class="flex justify-between items-start mb-3 border-b border-blue-100 pb-2">
-                            <h4 class="font-bold text-[#002d74] text-lg flex items-center gap-1"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${o.customerName || 'عميل'}</h4>
-                            <span class="bg-[#00839b] text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">بعهْدَتك</span>
-                        </div>
-                        <div class="space-y-2 mb-3 text-sm">
-                            <p class="font-bold text-gray-600 bg-white px-3 py-2 rounded-lg inline-block w-full border border-gray-100"><i data-lucide="map-pin" class="w-4 h-4 inline text-[#00839b]"></i> ${o.location || 'غير محدد'}</p>
-                            ${o.addressDetails ? `<p class="font-bold text-gray-700 bg-yellow-50 px-3 py-2 rounded-lg w-full border border-yellow-100"><span class="text-xs block text-yellow-600">العنوان التفصيلي:</span> ${o.addressDetails}</p>` : ''}
-                            <p class="font-bold text-gray-600 bg-white px-3 py-2 rounded-lg inline-block w-full border border-gray-100" dir="ltr"><i data-lucide="phone" class="w-4 h-4 inline text-[#00839b]"></i> ${o.phone || 'بدون رقم'}</p>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <h5 class="text-xs font-bold text-gray-500 mb-2">المنتجات (${(o.items || []).length}):</h5>
-                            ${itemsHtml}
-                        </div>
-                        
-                        <div class="flex justify-between items-center border-t border-blue-200 pt-4 bg-white -mx-5 -mb-5 px-5 py-4 rounded-b-2xl">
-                            <div>
-                                <span class="text-xs text-gray-500 block mb-0.5">المطلوب كاش من العميل</span>
-                                <span class="font-black text-[#002d74] text-xl">${(o.cashToCollect !== undefined ? o.cashToCollect : (o.total || 0)).toFixed(2)} د.أ</span>
-                            </div>
-                            <button onclick="window.empCompleteOrder('${o.id}')" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-md flex items-center gap-2"><i data-lucide="check" class="w-5 h-5"></i> إكمال التوصيل</button>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-
-            if (newOrFading.length === 0) {
-                secNew.innerHTML = '<div class="col-span-full text-center py-8 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2"></i><p class="text-gray-500 text-sm font-bold">لا توجد طلبات جديدة بانتظار القبول</p></div>';
-            } else {
-                secNew.innerHTML = newOrFading.map(o => {
-                    const isFading = appState.fadingOrders[o.id] !== undefined;
-                    const handledByEmp = appState.adminEmployees.find(e => e.id === o.handledBy);
-                    const handledByName = handledByEmp ? handledByEmp.name : 'الأدمن';
-                    
-                    let overlay = '';
-                    let cardClass = 'bg-white border-gray-100 hover:shadow-md border-b-4 border-b-[#00839b]';
-                    
-                    if (isFading) {
-                        cardClass = 'bg-gray-100 border-gray-200 fade-out-7s relative overflow-hidden shadow-none';
-                        overlay = `
-                        <div class="absolute inset-0 bg-white/85 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                            <i data-lucide="check-circle" class="w-10 h-10 text-[#00839b] mb-2 animate-bounce"></i>
-                            <p class="font-bold text-[#002d74] text-lg text-center px-4">تم أخذ الطلب بواسطة<br><span class="bg-[#00839b] text-white px-3 py-1 rounded-lg mt-2 inline-block">${handledByName}</span></p>
-                        </div>`;
-                    }
-
-                    const itemsText = (o.items || []).map(i => `${i.product?.name || 'منتج'} (x${i.quantity || 1})`).join('، ');
-
-                    return `
-                    <div class="p-5 rounded-2xl border shadow-sm transition-all ${cardClass} flex flex-col justify-between">
-                        ${overlay}
-                        <div>
-                            <div class="flex justify-between items-start mb-3 border-b border-gray-50 pb-2">
-                                <h4 class="font-bold text-[#002d74] text-lg"><i data-lucide="user" class="w-4 h-4 inline text-gray-400"></i> ${o.customerName || 'عميل'}</h4>
-                                <span class="text-xs text-gray-500 font-bold bg-gray-100 px-2 py-1 rounded-md">${getOrderDateStr(o.createdAt)}</span>
-                            </div>
-                            <p class="text-xs font-bold text-gray-500 mb-1">تفاصيل المنتجات:</p>
-                            <p class="text-sm text-gray-700 font-bold bg-gray-50 p-2 rounded-lg mb-3 truncate" title="${itemsText}">${itemsText || 'لا يوجد تفاصيل'}</p>
-                            <p class="text-xs text-gray-500 font-bold mb-4 bg-gray-50 p-2 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 inline text-[#00839b]"></i> المنطقة: ${o.location || 'غير محدد'}</p>
-                        </div>
-                        
-                        <div class="flex justify-between items-center border-t border-gray-100 pt-4 mt-auto">
-                            <div>
-                                <span class="text-xs text-gray-400 block mb-0.5">القيمة</span>
-                                <span class="font-black text-[#00839b] text-xl">${(o.total || 0).toFixed(2)} د.أ</span>
-                            </div>
-                            <div class="flex gap-2">
-                                ${!isFading ? `<button onclick="window.empIgnoreOrder('${o.id}')" class="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2.5 rounded-xl font-bold transition-colors shadow-sm flex items-center gap-1" title="تجاهل الطلب (إلغاء من شاشتك فقط)"><i data-lucide="eye-off" class="w-4 h-4"></i> تجاهل</button>` : ''}
-                                ${!isFading ? `<button onclick="window.empAcceptOrder('${o.id}')" class="bg-[#002d74] hover:bg-[#001d4a] text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-md flex items-center gap-1"><i data-lucide="hand" class="w-4 h-4"></i> أخذ الطلب</button>` : ''}
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-
-            if(window.lucide) lucide.createIcons();
-            
-            if (newOrFading.some(o => appState.fadingOrders[o.id])) {
-                setTimeout(() => {
-                    if(appState.isLoggedIn) window.renderEmployeeOrders();
-                }, 7000);
-            }
-        };
-
-        window.renderEmployeeStats = () => {
-            if(!appState.currentUser) return;
-            
-            const myId = appState.currentUser.id;
-            
-            const empOrders = appState.adminAllOrders.filter(o => o.handledBy === myId);
-            const acceptedOrders = empOrders.filter(o => o.status === 'تم توصيل الطلب بنجاح');
-            const rejectedOrders = empOrders.filter(o => o.status === 'مرفوض');
-            
-            const finalCompleted = acceptedOrders.length + (appState.currentUser.manualCompleted || 0);
-            const finalCanceled = rejectedOrders.length + (appState.currentUser.manualCanceled || 0);
-            
-            const totalValue = acceptedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-            const deliverySales = acceptedOrders.reduce((sum, o) => sum + (o.fees?.delivery || 0) + (o.fees?.service || 0), 0);
-            
-            const empRatings = appState.adminAllFeedback.filter(f => f.type === 'rating' && empOrders.find(o => o.id === f.orderId));
-            let avgRating = 0;
-            if (empRatings.length > 0) {
-                const sum = empRatings.reduce((s, r) => s + (r.rating || 0), 0);
-                avgRating = (sum / empRatings.length).toFixed(1);
-            }
-
-            document.getElementById('emp-stat-comp').textContent = finalCompleted;
-            document.getElementById('emp-stat-canc').textContent = finalCanceled;
-            document.getElementById('emp-stat-total').textContent = `${totalValue.toFixed(2)} د.أ`;
-            document.getElementById('emp-stat-del').textContent = `${deliverySales.toFixed(2)} د.أ`;
-            document.getElementById('emp-stat-rate').innerHTML = `<i data-lucide="star" class="w-4 h-4 fill-yellow-500 text-yellow-500 inline mb-1"></i> ${avgRating > 0 ? avgRating : 'لا يوجد'} <span class="text-xs text-gray-400 font-normal">(${empRatings.length} عميل)</span>`;
-
-            const invoiceList = document.getElementById('emp-invoice-list');
-            if (acceptedOrders.length === 0) {
-                invoiceList.innerHTML = '<div class="bg-white p-8 rounded-2xl border border-dashed border-gray-300 text-center"><i data-lucide="file-text" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i><p class="text-gray-400 text-sm font-bold">لا توجد فواتير أو طلبات مكتملة حتى الآن</p></div>';
-            } else {
-                invoiceList.innerHTML = acceptedOrders.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).map(o => `
-                    <div class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-3 shadow-sm hover:border-[#00839b]/30 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-green-100 p-2 rounded-lg text-green-600"><i data-lucide="check" class="w-5 h-5"></i></div>
-                            <div>
-                                <h5 class="font-bold text-[#002d74] text-sm">${o.customerName || 'عميل'}</h5>
-                                <p class="text-xs text-gray-500 font-bold mt-1">${getOrderDateStr(o.createdAt)}</p>
-                            </div>
-                        </div>
-                        <div class="text-left bg-gray-50 p-2 rounded-lg border border-gray-100">
-                            <span class="text-[10px] text-gray-500 block font-bold mb-0.5">قيمة الفاتورة</span>
-                            <span class="font-black text-[#00839b] block">${(o.total || 0).toFixed(2)} د.أ</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            if(window.lucide) lucide.createIcons();
         };
 
         window.openEditEmployee = (empId) => {
@@ -1271,7 +1116,7 @@
             }
         };
 
-        // --- Employees ---
+        // --- Employees (Stats & Lists) ---
         window.renderAdminEmployees = () => {
             const term = document.getElementById('admin-employee-search')?.value.trim().toLowerCase() || '';
             const list = document.getElementById('admin-employees-list');
@@ -1335,6 +1180,232 @@
                 </div>
                 `;
             }).join('');
+            if(window.lucide) lucide.createIcons();
+        };
+
+        // --- Employee Actions (Inside Dashboard) ---
+        window.empIgnoreOrder = (orderId) => {
+            if (!appState.ignoredOrders.includes(orderId)) {
+                appState.ignoredOrders.push(orderId);
+                localStorage.setItem('emp_ignored_orders', JSON.stringify(appState.ignoredOrders));
+                showToast("تم تجاهل الطلب (مخفي من شاشتك فقط)", "success");
+                window.renderEmployeeOrders();
+            }
+        };
+
+        window.empAcceptOrder = async (orderId) => {
+            if(!appState.db) return;
+            try {
+                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { 
+                    status: 'تم قبول الطلب', 
+                    handledBy: appState.currentUser.id 
+                });
+                showToast("تم أخذ الطلب لنفسك بنجاح", "success");
+                if(document.getElementById('admin-order-details-modal')?.classList.contains('active')) {
+                    window.showAdminOrderDetails(orderId);
+                }
+            } catch(e) { showToast("خطأ في القبول", "error"); }
+        };
+
+        window.renderEmployeeOrders = () => {
+            if(!appState.currentUser) return;
+            const secActive = document.getElementById('emp-my-orders-list');
+            const secNew = document.getElementById('emp-new-orders-list');
+            
+            const myActive = [];
+            const newOrFading = [];
+            const now = Date.now();
+
+            appState.adminAllOrders.forEach(o => {
+                if (!o.status) return;
+                if (o.status === 'تم توصيل الطلب بنجاح' || o.status === 'مرفوض') return;
+
+                if (o.handledBy === appState.currentUser.id && o.status !== 'بانتظار قبول الطلب') {
+                    myActive.push(o);
+                } else if (o.status === 'بانتظار قبول الطلب') {
+                    if (!appState.ignoredOrders.includes(o.id)) {
+                        newOrFading.push(o);
+                    }
+                } else if (o.handledBy && o.handledBy !== appState.currentUser.id) {
+                    if (!appState.ignoredOrders.includes(o.id)) {
+                        if (!appState.fadingOrders[o.id]) {
+                            appState.fadingOrders[o.id] = now;
+                        }
+                        if (now - appState.fadingOrders[o.id] < 7000) {
+                            newOrFading.push(o);
+                        }
+                    }
+                }
+            });
+
+            if (myActive.length === 0) {
+                secActive.innerHTML = '<div class="col-span-full bg-white p-6 rounded-2xl border text-center border-dashed border-gray-300"><p class="text-gray-400 text-sm font-bold">لا توجد طلبات قيد التنفيذ لديك حالياً</p></div>';
+            } else {
+                secActive.innerHTML = myActive.map(o => {
+                    const itemsHtml = (o.items || []).map((i, idx) => `
+                        <div class="flex flex-col bg-white p-3 rounded-xl mb-2 border ${i.isAvailable === false ? 'bg-red-50 border-red-300 shadow-inner' : 'border-gray-200 shadow-sm'} transition-colors">
+                            <div class="flex items-center gap-3">
+                                <img src="${i.product?.image || ''}" class="w-10 h-10 rounded-lg object-contain bg-white border border-gray-100 ${i.isAvailable === false ? 'opacity-50 grayscale' : ''}">
+                                <div class="flex-grow">
+                                    <span class="text-sm font-bold block ${i.isAvailable === false ? 'line-through text-red-500' : 'text-[#002d74]'}">${i.product?.name || 'منتج'} ${i.option ? `<span class="text-[#00839b] mx-1">(${i.option})</span>` : ''} <span class="text-[#00839b] mx-1">x${i.quantity || 1}</span></span>
+                                    <span class="text-xs font-black ${i.isAvailable === false ? 'line-through text-red-400' : 'text-gray-600'}">${((i.product?.price || 0) * (i.quantity || 1)).toFixed(2)} د.أ</span>
+                                </div>
+                            </div>
+                            <button onclick="window.toggleItemAvailability('${o.id}', ${idx})" class="mt-3 text-xs w-full py-2 rounded-lg font-bold transition-all shadow-sm flex justify-center items-center gap-1.5 ${i.isAvailable === false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-100 text-red-600 border border-red-200 hover:bg-red-200'}">
+                                <i data-lucide="${i.isAvailable === false ? 'check-circle' : 'x-circle'}" class="w-4 h-4"></i> 
+                                ${i.isAvailable === false ? 'إرجاع المنتج (موجود)' : 'تحديد كـ "غير موجود"'}
+                            </button>
+                        </div>
+                    `).join('');
+
+                    let nextBtn = '';
+                    if (o.status === 'تم قبول الطلب') {
+                        nextBtn = `<button onclick="window.advanceOrderStatus('${o.id}', 'قيد التنفيذ')" class="flex-1 bg-[#00839b] hover:bg-[#005f73] text-white px-4 py-3 rounded-xl font-bold transition-colors shadow">الطلب قيد التنفيذ</button>`;
+                    } else if (o.status === 'قيد التنفيذ' || o.status === 'قيد التحضير') {
+                        nextBtn = `<button onclick="window.advanceOrderStatus('${o.id}', 'تم استلام الطلب')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold transition-colors shadow">تم استلام الطلب</button>`;
+                    } else if (o.status === 'تم استلام الطلب' || o.status === 'قيد التوصيل') {
+                        nextBtn = `<button onclick="window.advanceOrderStatus('${o.id}', 'تم توصيل الطلب بنجاح')" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-xl font-bold transition-colors shadow flex justify-center items-center gap-2"><i data-lucide="check" class="w-5 h-5"></i> تأكيد التوصيل</button>`;
+                    }
+
+                    return `
+                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-200 shadow-sm relative transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-3 border-b border-blue-100 pb-2">
+                                <h4 class="font-bold text-[#002d74] text-lg flex items-center gap-1"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${o.customerName || 'عميل'}</h4>
+                                <span class="bg-[#00839b] text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">بعهْدَتك</span>
+                            </div>
+                            <div class="space-y-2 mb-3 text-sm font-medium">
+                                <a href="tel:${o.phone}" class="font-bold text-blue-600 bg-white px-3 py-2 rounded-lg border border-blue-100 flex items-center gap-2 hover:bg-blue-100 transition-colors" dir="ltr"><i data-lucide="phone-call" class="w-4 h-4"></i> الاتصال: ${o.phone || 'بدون رقم'}</a>
+                                ${o.exactLocation ? `<a href="${o.exactLocation}" target="_blank" class="font-bold text-green-700 bg-white px-3 py-2 rounded-lg border border-green-100 flex items-center gap-2 hover:bg-green-100 transition-colors"><i data-lucide="map-pin" class="w-4 h-4"></i> فتح موقع العميل (GPS)</a>` : `<p class="font-bold text-gray-600 bg-white px-3 py-2 rounded-lg border border-gray-100 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-[#00839b]"></i> المنطقة: ${o.location || 'غير محدد'}</p>`}
+                                ${o.addressDetails ? `<p class="font-bold text-yellow-700 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-100"><span class="text-xs block text-yellow-600 mb-1">العنوان التفصيلي:</span> ${o.addressDetails}</p>` : ''}
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5 class="text-xs font-bold text-gray-500 mb-2">المنتجات (${(o.items || []).length}):</h5>
+                                ${itemsHtml}
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-blue-200 pt-4 mt-auto">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs text-gray-500 font-bold">المطلوب كاش:</span>
+                                <span class="font-black text-[#002d74] text-2xl">${(o.cashToCollect !== undefined ? o.cashToCollect : (o.total || 0)).toFixed(2)} د.أ</span>
+                            </div>
+                            <div class="flex gap-2">
+                                ${nextBtn}
+                                <button onclick="window.advanceOrderStatus('${o.id}', 'بانتظار قبول الطلب', true)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-xl font-bold transition-colors shadow-sm" title="تراجع خطوة وإرجاع الطلب للكل"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            if (newOrFading.length === 0) {
+                secNew.innerHTML = '<div class="col-span-full text-center py-8 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2"></i><p class="text-gray-500 text-sm font-bold">لا توجد طلبات جديدة بانتظار القبول</p></div>';
+            } else {
+                secNew.innerHTML = newOrFading.map(o => {
+                    const isFading = appState.fadingOrders[o.id] !== undefined;
+                    const handledByEmp = appState.adminEmployees.find(e => e.id === o.handledBy);
+                    const handledByName = handledByEmp ? handledByEmp.name : 'الأدمن';
+                    
+                    let overlay = '';
+                    let cardClass = 'bg-white border-gray-100 hover:shadow-md border-b-4 border-b-[#00839b]';
+                    
+                    if (isFading) {
+                        cardClass = 'bg-gray-100 border-gray-200 fade-out-7s relative overflow-hidden shadow-none';
+                        overlay = `
+                        <div class="absolute inset-0 bg-white/85 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                            <i data-lucide="check-circle" class="w-10 h-10 text-[#00839b] mb-2 animate-bounce"></i>
+                            <p class="font-bold text-[#002d74] text-lg text-center px-4">تم أخذ الطلب بواسطة<br><span class="bg-[#00839b] text-white px-3 py-1 rounded-lg mt-2 inline-block">${handledByName}</span></p>
+                        </div>`;
+                    }
+
+                    const itemsText = (o.items || []).map(i => `${i.product?.name || 'منتج'} (x${i.quantity || 1})`).join('، ');
+
+                    return `
+                    <div class="p-5 rounded-2xl border shadow-sm transition-all ${cardClass} flex flex-col justify-between">
+                        ${overlay}
+                        <div>
+                            <div class="flex justify-between items-start mb-3 border-b border-gray-50 pb-2">
+                                <h4 class="font-bold text-[#002d74] text-lg"><i data-lucide="user" class="w-4 h-4 inline text-gray-400"></i> ${o.customerName || 'عميل'}</h4>
+                                <span class="text-xs text-gray-500 font-bold bg-gray-100 px-2 py-1 rounded-md">${getOrderDateStr(o.createdAt)}</span>
+                            </div>
+                            <p class="text-xs font-bold text-gray-500 mb-1">تفاصيل المنتجات:</p>
+                            <p class="text-sm text-gray-700 font-bold bg-gray-50 p-2 rounded-lg mb-3 truncate" title="${itemsText}">${itemsText || 'لا يوجد تفاصيل'}</p>
+                            <p class="text-xs text-gray-500 font-bold mb-4 bg-gray-50 p-2 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 inline text-[#00839b]"></i> المنطقة: ${o.location || 'غير محدد'}</p>
+                        </div>
+                        
+                        <div class="flex justify-between items-center border-t border-gray-100 pt-4 mt-auto">
+                            <div>
+                                <span class="text-xs text-gray-400 block mb-0.5">القيمة</span>
+                                <span class="font-black text-[#00839b] text-xl">${(o.total || 0).toFixed(2)} د.أ</span>
+                            </div>
+                            <div class="flex gap-2">
+                                ${!isFading ? `<button onclick="window.empIgnoreOrder('${o.id}')" class="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2.5 rounded-xl font-bold transition-colors shadow-sm flex items-center gap-1" title="تجاهل الطلب (إلغاء من شاشتك فقط)"><i data-lucide="eye-off" class="w-4 h-4"></i> تجاهل</button>` : ''}
+                                ${!isFading ? `<button onclick="window.empAcceptOrder('${o.id}')" class="bg-[#002d74] hover:bg-[#001d4a] text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-md flex items-center gap-1"><i data-lucide="hand" class="w-4 h-4"></i> أخذ الطلب</button>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            if(window.lucide) lucide.createIcons();
+            
+            if (newOrFading.some(o => appState.fadingOrders[o.id])) {
+                setTimeout(() => {
+                    if(appState.isLoggedIn) window.renderEmployeeOrders();
+                }, 7000);
+            }
+        };
+
+        window.renderEmployeeStats = () => {
+            if(!appState.currentUser) return;
+            
+            const myId = appState.currentUser.id;
+            
+            const empOrders = appState.adminAllOrders.filter(o => o.handledBy === myId);
+            const acceptedOrders = empOrders.filter(o => o.status === 'تم توصيل الطلب بنجاح');
+            const rejectedOrders = empOrders.filter(o => o.status === 'مرفوض');
+            
+            const finalCompleted = acceptedOrders.length + (appState.currentUser.manualCompleted || 0);
+            const finalCanceled = rejectedOrders.length + (appState.currentUser.manualCanceled || 0);
+            
+            const totalValue = acceptedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+            const deliverySales = acceptedOrders.reduce((sum, o) => sum + (o.fees?.delivery || 0) + (o.fees?.service || 0), 0);
+            
+            const empRatings = appState.adminAllFeedback.filter(f => f.type === 'rating' && empOrders.find(o => o.id === f.orderId));
+            let avgRating = 0;
+            if (empRatings.length > 0) {
+                const sum = empRatings.reduce((s, r) => s + (r.rating || 0), 0);
+                avgRating = (sum / empRatings.length).toFixed(1);
+            }
+
+            document.getElementById('emp-stat-comp').textContent = finalCompleted;
+            document.getElementById('emp-stat-canc').textContent = finalCanceled;
+            document.getElementById('emp-stat-total').textContent = `${totalValue.toFixed(2)} د.أ`;
+            document.getElementById('emp-stat-del').textContent = `${deliverySales.toFixed(2)} د.أ`;
+            document.getElementById('emp-stat-rate').innerHTML = `<i data-lucide="star" class="w-4 h-4 fill-yellow-500 text-yellow-500 inline mb-1"></i> ${avgRating > 0 ? avgRating : 'لا يوجد'} <span class="text-xs text-gray-400 font-normal">(${empRatings.length} عميل)</span>`;
+
+            const invoiceList = document.getElementById('emp-invoice-list');
+            if (acceptedOrders.length === 0) {
+                invoiceList.innerHTML = '<div class="bg-white p-8 rounded-2xl border border-dashed border-gray-300 text-center"><i data-lucide="file-text" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i><p class="text-gray-400 text-sm font-bold">لا توجد فواتير أو طلبات مكتملة حتى الآن</p></div>';
+            } else {
+                invoiceList.innerHTML = acceptedOrders.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).map(o => `
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center mb-3 shadow-sm hover:border-[#00839b]/30 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-green-100 p-2 rounded-lg text-green-600"><i data-lucide="check" class="w-5 h-5"></i></div>
+                            <div>
+                                <h5 class="font-bold text-[#002d74] text-sm">${o.customerName || 'عميل'}</h5>
+                                <p class="text-xs text-gray-500 font-bold mt-1">${getOrderDateStr(o.createdAt)}</p>
+                            </div>
+                        </div>
+                        <div class="text-left bg-gray-50 p-2 rounded-lg border border-gray-100">
+                            <span class="text-[10px] text-gray-500 block font-bold mb-0.5">قيمة الفاتورة</span>
+                            <span class="font-black text-[#00839b] block">${(o.total || 0).toFixed(2)} د.أ</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
             if(window.lucide) lucide.createIcons();
         };
 

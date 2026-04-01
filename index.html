@@ -26,8 +26,8 @@
 </head>
 <body class="flex flex-col min-h-screen text-gray-800">
 
-    <!-- z-[9999] لضمان ظهور الإشعار فوق كل النوافذ -->
-    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+    <!-- z-[99999] لضمان ظهور الإشعار فوق كل النوافذ -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[99999] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Login Screen (Visible by default) -->
     <div id="login-screen" class="flex-grow flex items-center justify-center p-4">
@@ -66,17 +66,22 @@
         <div class="flex-grow flex flex-col md:flex-row overflow-hidden container mx-auto">
             <!-- Sidebar / Tabs -->
             <div class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-l border-gray-200 flex-shrink-0 flex md:flex-col shadow-sm z-0 overflow-x-auto md:overflow-y-auto no-scrollbar">
-                <button onclick="window.switchAdminTab('orders')" id="tab-orders" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex flex-col md:flex-row items-center gap-2 transition-colors">
-                    <i data-lucide="shopping-bag" class="w-5 h-5 mx-auto md:mx-0"></i> <span>الطلبات</span>
+                <button onclick="window.switchAdminTab('orders')" id="tab-orders" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex flex-col md:flex-row items-center justify-between gap-2 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="shopping-bag" class="w-5 h-5 mx-auto md:mx-0"></i> الطلبات</span>
                 </button>
                 <button onclick="window.switchAdminTab('history')" id="tab-history" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
-                    <i data-lucide="history" class="w-5 h-5 mx-auto md:mx-0"></i> <span>الطلبات السابقة</span>
+                    <span class="flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 mx-auto md:mx-0"></i> الطلبات السابقة</span>
                 </button>
-                <button onclick="window.switchAdminTab('users')" id="tab-users" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
-                    <i data-lucide="users" class="w-5 h-5 mx-auto md:mx-0"></i> <span>العملاء</span>
+                <button onclick="window.switchAdminTab('users')" id="tab-users" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-2 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 mx-auto md:mx-0"></i> العملاء</span>
+                    <span id="badge-users" class="hidden bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">0</span>
                 </button>
-                <button onclick="window.switchAdminTab('feedback')" id="tab-feedback" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
-                    <i data-lucide="message-square" class="w-5 h-5 mx-auto md:mx-0"></i> <span>الشكاوي</span>
+                <button onclick="window.switchAdminTab('feedback')" id="tab-feedback" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-2 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 mx-auto md:mx-0"></i> الشكاوي</span>
+                    <span id="badge-feedback" class="hidden text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">0</span>
+                </button>
+                <button onclick="window.switchAdminTab('employees')" id="tab-employees" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="briefcase" class="w-5 h-5 mx-auto md:mx-0"></i> الموظفين</span>
                 </button>
             </div>
 
@@ -86,7 +91,7 @@
                 <!-- Orders Section (Active Only) -->
                 <div id="admin-orders-sec" class="space-y-4">
                     <div class="flex justify-between items-end mb-4">
-                        <h2 class="text-xl font-bold text-[#002d74]">أحدث الطلبات (غير المكتملة)</h2>
+                        <h2 class="text-xl font-bold text-[#002d74]">أحدث الطلبات (غير المكتملة) (<span id="count-orders">0</span>)</h2>
                         <button onclick="window.renderAdminOrders()" class="text-sm text-gray-500 hover:text-[#00839b] flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border shadow-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث</button>
                     </div>
                     <div id="orders-list-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -97,8 +102,12 @@
                 <!-- History Orders Section -->
                 <div id="admin-history-sec" class="hidden space-y-4">
                     <div class="flex justify-between items-end mb-4">
-                        <h2 class="text-xl font-bold text-[#002d74]">الطلبات السابقة (المنجزة)</h2>
+                        <h2 class="text-xl font-bold text-[#002d74]">الطلبات السابقة (المنجزة) (<span id="count-history">0</span>)</h2>
                         <button onclick="window.renderPreviousOrders()" class="text-sm text-gray-500 hover:text-[#00839b] flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border shadow-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث</button>
+                    </div>
+                    <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
+                        <input type="text" id="admin-history-search" oninput="window.renderPreviousOrders()" placeholder="ابحث باسم العميل أو رقم الهاتف..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent font-medium">
+                        <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
                     </div>
                     <div id="previous-orders-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- Previous orders injected here -->
@@ -108,7 +117,7 @@
                 <!-- Users Section -->
                 <div id="admin-users-sec" class="hidden space-y-6">
                     <div>
-                        <h2 class="text-xl font-bold text-[#002d74] mb-4">إدارة بيانات العملاء والمحافظ</h2>
+                        <h2 class="text-xl font-bold text-[#002d74] mb-4">إدارة العملاء (<span id="count-users">0</span>)</h2>
                         <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
                             <input type="text" id="admin-user-search" oninput="window.renderAdminUsers()" placeholder="ابحث برقم الهاتف أو اسم العميل..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent font-medium">
                             <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
@@ -119,8 +128,22 @@
 
                 <!-- Feedback Section -->
                 <div id="admin-feedback-sec" class="hidden space-y-4">
-                    <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-6 h-6 text-[#00839b]"></i> صندوق الاقتراحات والشكاوي</h2>
+                    <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-6 h-6 text-[#00839b]"></i> صندوق الاقتراحات والشكاوي (<span id="count-feedback">0</span>)</h2>
+                    <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
+                        <input type="text" id="admin-feedback-search" oninput="window.renderAdminFeedback()" placeholder="ابحث في الرسائل..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent font-medium">
+                        <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
+                    </div>
                     <div id="admin-feedback-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+                </div>
+
+                <!-- Employees Section -->
+                <div id="admin-employees-sec" class="hidden space-y-4">
+                    <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="briefcase" class="w-6 h-6 text-[#00839b]"></i> إدارة الموظفين (<span id="count-employees">0</span>)</h2>
+                    <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
+                        <input type="text" id="admin-employee-search" oninput="window.renderAdminEmployees()" placeholder="ابحث عن اسم الموظف..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent font-medium">
+                        <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
+                    </div>
+                    <div id="admin-employees-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
 
             </div>
@@ -138,8 +161,8 @@
             <p id="wallet-edit-phone" class="text-sm font-bold text-[#00839b] mb-4 bg-[#f0f9fa] p-2 rounded-lg text-center" dir="ltr"></p>
             
             <div class="space-y-4">
-                <!-- Balance & Debt -->
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Balance, Debt & Points -->
+                <div class="grid grid-cols-2 gap-3 mb-2">
                     <div class="text-right">
                         <label class="text-xs font-bold text-green-700 mb-1 block">رصيد متاح (+)</label>
                         <input type="number" step="0.01" id="wallet-edit-balance" placeholder="0.00" class="w-full p-3 border-2 border-green-200 rounded-xl outline-none focus:border-green-500 bg-green-50 font-black text-center text-green-700 text-lg">
@@ -148,10 +171,25 @@
                         <label class="text-xs font-bold text-red-700 mb-1 block">مستحقات (-)</label>
                         <input type="number" step="0.01" id="wallet-edit-debt" placeholder="0.00" class="w-full p-3 border-2 border-red-200 rounded-xl outline-none focus:border-red-500 bg-red-50 font-black text-center text-red-700 text-lg">
                     </div>
+                    <div class="text-right col-span-2">
+                        <label class="text-xs font-bold text-yellow-700 mb-1 block">نقاط الولاء (تعديل يدوي)</label>
+                        <input type="number" id="wallet-edit-points" placeholder="0" class="w-full p-3 border-2 border-yellow-200 rounded-xl outline-none focus:border-yellow-500 bg-yellow-50 font-black text-center text-yellow-700 text-lg">
+                    </div>
+                </div>
+
+                <!-- Free Delivery Toggle -->
+                <div class="pt-3 pb-2 border-b border-t border-gray-100 flex items-center justify-between">
+                    <label class="text-sm font-bold text-[#002d74] flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="truck" class="w-4 h-4"></i> تفعيل التوصيل المجاني
+                    </label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="wallet-edit-free-delivery" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
                 </div>
 
                 <!-- Custom Coupon -->
-                <div class="pt-4 border-t border-gray-100">
+                <div class="pt-2">
                     <label class="text-xs font-bold text-[#002d74] mb-2 block flex items-center gap-1"><i data-lucide="tag" class="w-4 h-4"></i> كود خصم خاص بالعميل</label>
                     <div class="flex flex-col gap-2">
                         <div class="flex gap-2">
@@ -205,8 +243,10 @@
             adminAllOrders: [],
             adminAllUsers: [],
             adminAllFeedback: [],
+            adminEmployees: [{id: 'emp_1', name: 'راشد'}], // Default Employee
             editingUser: null,
-            isLoggedIn: false
+            isLoggedIn: false,
+            lastViewedUsers: parseInt(localStorage.getItem('viewedUsersCount') || '0')
         };
 
         const showToast = (msg, type) => {
@@ -279,10 +319,38 @@
             document.getElementById('dashboard-screen').classList.remove('hidden');
             document.getElementById('dashboard-screen').classList.add('flex');
             initDataListeners();
+            window.renderAdminEmployees(); // Load initial dummy employee
+        };
+
+        const updateBadges = () => {
+            // New Users Badge
+            const usersBadge = document.getElementById('badge-users');
+            const newUsers = Math.max(0, appState.adminAllUsers.length - appState.lastViewedUsers);
+            if (newUsers > 0) {
+                usersBadge.textContent = newUsers;
+                usersBadge.classList.remove('hidden');
+            } else {
+                usersBadge.classList.add('hidden');
+            }
+
+            // Feedback Badges (Complaints & Suggestions that are 'يتم حلها')
+            const feedbackBadge = document.getElementById('badge-feedback');
+            const unresolvedComplaints = appState.adminAllFeedback.filter(f => f.status === 'يتم حلها' && f.type === 'complaint').length;
+            const unresolvedSuggestions = appState.adminAllFeedback.filter(f => f.status === 'يتم حلها' && f.type === 'suggestion').length;
             
-            // Request Notification Permission
-            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
+            feedbackBadge.classList.remove('bg-red-500', 'bg-green-500', 'bg-[#8B4513]', 'hidden');
+
+            if (unresolvedComplaints > 0 && unresolvedSuggestions > 0) {
+                feedbackBadge.textContent = unresolvedComplaints + unresolvedSuggestions;
+                feedbackBadge.classList.add('bg-[#8B4513]'); // Brown
+            } else if (unresolvedComplaints > 0) {
+                feedbackBadge.textContent = unresolvedComplaints;
+                feedbackBadge.classList.add('bg-red-500'); // Red
+            } else if (unresolvedSuggestions > 0) {
+                feedbackBadge.textContent = unresolvedSuggestions;
+                feedbackBadge.classList.add('bg-green-500'); // Green
+            } else {
+                feedbackBadge.classList.add('hidden');
             }
         };
 
@@ -298,55 +366,58 @@
                 if (hasNew && appState.isLoggedIn) {
                     showToast("طلب جديد! تفقد القائمة", "success");
                     try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play(); } catch(e){}
-                    
-                    // Web Push Notification for background tab
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        try {
-                            new Notification("طلب جديد فرح سناكس!", {
-                                body: "لقد وصلك طلب جديد الآن، تفقد لوحة الإدارة.",
-                                icon: "https://uploads.onecompiler.io/43n8uttmw/448872dja/WhatsApp_Image_2025-12-21_at_11.54.43_AM-removebg-preview.png"
-                            });
-                        } catch(e) {}
-                    }
                 }
                 appState.adminAllOrders = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 window.renderAdminOrders();
                 window.renderPreviousOrders();
+                window.renderAdminEmployees(); // Refresh stats
             });
 
             // Users
             onSnapshot(collection(appState.db, PATH_PROFILES), (snap) => {
                 appState.adminAllUsers = snap.docs.map(d => ({uid: d.id, ...d.data()}));
                 window.renderAdminUsers();
+                updateBadges();
             });
 
             // Feedback
             onSnapshot(collection(appState.db, PATH_FEEDBACK), (snap) => {
                 appState.adminAllFeedback = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 window.renderAdminFeedback();
+                updateBadges();
+                window.renderAdminEmployees(); // Refresh ratings
             });
         };
 
         window.switchAdminTab = (t) => {
-            ['orders', 'history', 'users', 'feedback'].forEach(tab => {
+            ['orders', 'history', 'users', 'feedback', 'employees'].forEach(tab => {
                 const sec = document.getElementById(`admin-${tab}-sec`);
                 const btn = document.getElementById(`tab-${tab}`);
                 if(sec) sec.classList.toggle('hidden', tab !== t);
                 if(btn) {
                     if(tab === t) {
-                        btn.className = "shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex flex-col md:flex-row items-center gap-2 transition-colors";
+                        btn.className = "shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-[#00839b] text-[#00839b] bg-[#f0f9fa] flex flex-col md:flex-row items-center justify-between gap-2 transition-colors";
                     } else {
-                        btn.className = "shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors";
+                        btn.className = "shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-2 transition-colors";
                     }
                 }
             });
+
+            // Clear Users badge if viewing users
+            if(t === 'users') {
+                appState.lastViewedUsers = appState.adminAllUsers.length;
+                localStorage.setItem('viewedUsersCount', appState.lastViewedUsers.toString());
+                updateBadges();
+            }
         };
 
         // --- Orders ---
         window.renderAdminOrders = () => {
             const sec = document.getElementById('orders-list-container');
-            const activeOrders = appState.adminAllOrders.filter(o => o.status !== 'تم توصيل الطلب بنجاح').sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            const activeOrders = appState.adminAllOrders.filter(o => o.status !== 'تم توصيل الطلب بنجاح' && o.status !== 'مرفوض').sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
             
+            document.getElementById('count-orders').textContent = activeOrders.length;
+
             if (activeOrders.length === 0) {
                 sec.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400"><i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i><p class="font-bold text-lg">لا توجد طلبات قيد التنفيذ</p></div>';
                 if(window.lucide) lucide.createIcons();
@@ -369,7 +440,7 @@
                         <span class="text-xs px-3 py-1.5 rounded-full font-bold ${statusBg}">${o.status}</span>
                     </div>
                     <div class="flex justify-between items-center mt-3">
-                        <p class="text-sm text-gray-500 font-medium bg-gray-50 px-3 py-1.5 rounded-lg"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline text-[#00839b]"></i> ${o.location}</p>
+                        <p class="text-sm text-gray-500 font-medium bg-gray-50 px-3 py-1.5 rounded-lg"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline text-[#00839b]"></i> ${o.location === 'موقع محدد عبر الـ GPS' ? 'GPS' : o.location}</p>
                         <span class="font-black text-[#00839b] text-lg">${o.total.toFixed(2)} د.أ</span>
                     </div>
                 </div>`;
@@ -378,11 +449,17 @@
         };
 
         window.renderPreviousOrders = () => {
+            const term = document.getElementById('admin-history-search').value.trim().toLowerCase();
             const sec = document.getElementById('previous-orders-list');
-            const completedOrders = appState.adminAllOrders.filter(o => o.status === 'تم توصيل الطلب بنجاح').sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            const completedOrders = appState.adminAllOrders.filter(o => 
+                (o.status === 'تم توصيل الطلب بنجاح' || o.status === 'مرفوض') &&
+                ((o.customerName||'').toLowerCase().includes(term) || (o.phone||'').includes(term))
+            ).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
             
+            document.getElementById('count-history').textContent = completedOrders.length;
+
             if (completedOrders.length === 0) {
-                sec.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p class="font-bold text-sm">لا توجد طلبات سابقة منجزة</p></div>';
+                sec.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p class="font-bold text-sm">لا توجد طلبات مطابقة</p></div>';
                 return;
             }
 
@@ -390,7 +467,7 @@
                 <div class="bg-white p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-gray-400 transition-colors shadow-sm relative" onclick="window.showAdminOrderDetails('${o.id}')">
                     <button onclick="window.deleteOrder('${o.id}', event)" class="absolute top-3 left-3 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-lg z-10" title="حذف الطلب نهائياً"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     <div class="flex justify-between items-center mb-2 pr-10">
-                        <h4 class="font-bold text-[#002d74]">${o.customerName} <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-md inline-block mr-2">مكتمل</span></h4>
+                        <h4 class="font-bold text-[#002d74]">${o.customerName} <span class="text-xs font-bold ${o.status==='مرفوض'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'} px-2 py-1 rounded-md inline-block mr-2">${o.status}</span></h4>
                     </div>
                     <div class="flex justify-between items-center mt-2 border-t border-gray-100 pt-2">
                         <p class="text-xs text-gray-400 font-medium">${new Date(o.createdAt?.toMillis() || Date.now()).toLocaleDateString('ar-EG')}</p>
@@ -426,6 +503,11 @@
             `).join('');
 
             const dateStr = o.createdAt?.toMillis ? new Date(o.createdAt.toMillis()).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : 'غير محدد';
+            
+            let deliveryRowHtml = `<div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span>+ ${(o.fees?.delivery||0).toFixed(2)} د.أ</span></div>`;
+            if(o.fees?.isFreeDelivery) {
+                deliveryRowHtml = `<div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span><span class="line-through text-red-400 mr-1 text-xs font-normal">0.10</span> <span class="text-green-600 font-bold">+ 0.00 د.أ</span></span></div>`;
+            }
 
             const content = `
                 <div class="space-y-4">
@@ -443,7 +525,8 @@
                             <div><span class="text-gray-400 block text-xs mb-1">المنطقة</span> ${o.location}</div>
                             <div class="col-span-2"><span class="text-gray-400 block text-xs mb-1">رقم الهاتف</span> <span dir="ltr">${o.phone || 'غير متوفر'}</span></div>
                         </div>
-                        ${o.exactLocation ? `<a href="${o.exactLocation}" target="_blank" class="mt-4 w-full text-blue-600 hover:text-white hover:bg-blue-600 text-sm font-bold flex justify-center items-center gap-2 bg-blue-50 py-3 rounded-xl transition-colors border border-blue-100"><i data-lucide="map" class="w-4 h-4"></i> فتح الموقع الدقيق للعميل (GPS)</a>` : ''}
+                        ${o.addressDetails ? `<div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-3"><span class="text-yellow-700 block text-xs mb-1 font-bold">العنوان التفصيلي:</span> <p class="text-gray-800 font-bold text-lg">${o.addressDetails}</p></div>` : ''}
+                        ${o.exactLocation ? `<a href="${o.exactLocation}" target="_blank" class="mt-4 w-full text-blue-600 hover:text-white hover:bg-blue-600 text-sm font-bold flex justify-center items-center gap-2 bg-blue-50 py-3 rounded-xl transition-colors border border-blue-100"><i data-lucide="map" class="w-4 h-4"></i> فتح الموقع الدقيق (GPS)</a>` : ''}
                     </div>
                     
                     <div>
@@ -454,18 +537,20 @@
 
                     <div class="bg-[#f0f9fa] p-5 rounded-2xl border border-[#00839b]/20 shadow-sm text-sm space-y-3 font-medium">
                         <div class="flex justify-between text-gray-600"><span>سعر المنتجات:</span><span>${(o.total - (o.fees?.delivery||0) - (o.fees?.service||0) + (o.fees?.discount||0)).toFixed(2)} د.أ</span></div>
-                        <div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span>+ ${(o.fees?.delivery||0).toFixed(2)} د.أ</span></div>
+                        ${deliveryRowHtml}
                         <div class="flex justify-between text-gray-600"><span>رسوم الخدمة:</span><span>+ ${(o.fees?.service||0).toFixed(2)} د.أ</span></div>
                         ${o.fees?.coupon ? `<div class="flex justify-between text-green-600 font-bold bg-green-50 p-2 rounded-lg mt-1"><span>خصم (${o.fees.coupon}):</span><span>- ${(o.fees?.discount||0).toFixed(2)} د.أ</span></div>` : ''}
                         <div class="flex justify-between border-t border-[#00839b]/20 pt-3 mt-2 font-black text-2xl text-[#002d74] items-center">
                             <span>الإجمالي</span>
                             <span class="text-[#00839b]">${o.total.toFixed(2)} د.أ</span>
                         </div>
+                        ${o.deductedFromWallet > 0 ? `<div class="flex justify-between text-blue-600 font-bold border-t border-gray-200 pt-2"><span>مخصوم من المحفظة:</span><span>- ${o.deductedFromWallet.toFixed(2)} د.أ</span></div>` : ''}
+                        ${o.cashToCollect >= 0 ? `<div class="flex justify-between text-red-600 font-black text-xl"><span>المطلوب كاش:</span><span>${o.cashToCollect.toFixed(2)} د.أ</span></div>` : ''}
                     </div>
 
                     <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
                         <label class="font-bold text-sm mb-3 text-gray-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[#00839b]"></i> تحديث حالة الطلب الآن:</label>
-                        <select onchange="window.updateOrderStatus('${o.id}', this.value)" class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none transition-all text-[#002d74] text-lg">
+                        <select id="status-select-${o.id}" class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none transition-all text-[#002d74] text-lg mb-3">
                             <option ${o.status==='بانتظار قبول الطلب'?'selected':''}>بانتظار قبول الطلب</option>
                             <option ${o.status==='تم قبول الطلب'?'selected':''}>تم قبول الطلب</option>
                             <option ${o.status==='قيد التحضير'?'selected':''}>قيد التحضير</option>
@@ -474,6 +559,14 @@
                             <option ${o.status==='تم توصيل الطلب بنجاح'?'selected':''}>تم توصيل الطلب بنجاح</option>
                             <option ${o.status==='مرفوض'?'selected':''}>مرفوض (إلغاء)</option>
                         </select>
+                        
+                        <label class="font-bold text-sm mb-2 text-gray-700 flex items-center gap-2 mt-4 border-t pt-4"><i data-lucide="user-check" class="w-4 h-4 text-[#00839b]"></i> تم التنفيذ بواسطة (الموظف):</label>
+                        <select id="employee-select-${o.id}" class="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 font-bold focus:ring-2 focus:ring-[#00839b] outline-none mb-4">
+                            <option value="">-- اختر الموظف --</option>
+                            ${appState.adminEmployees.map(emp => `<option value="${emp.id}" ${o.handledBy === emp.id ? 'selected' : ''}>${emp.name}</option>`).join('')}
+                        </select>
+
+                        <button onclick="window.confirmOrderStatusUpdate('${o.id}')" class="w-full bg-[#00839b] text-white py-3 rounded-xl font-bold shadow hover:bg-[#005f73] transition-colors">حفظ الحالة</button>
                     </div>
                 </div>
             `;
@@ -482,16 +575,25 @@
             toggleModal('admin-order-details', true);
         };
 
-        window.updateOrderStatus = async (id, s) => {
+        window.confirmOrderStatusUpdate = async (id) => {
+            const s = document.getElementById(`status-select-${id}`).value;
+            const empId = document.getElementById(`employee-select-${id}`).value;
+            
+            if(!empId && (s === 'تم توصيل الطلب بنجاح' || s === 'مرفوض' || s === 'تم قبول الطلب')) {
+                showToast("يرجى اختيار الموظف الذي تولى الطلب", "error");
+                return;
+            }
+
             if (!appState.db) return;
             try {
-                await updateDoc(doc(appState.db, PATH_ORDERS, id), { status: s });
+                await updateDoc(doc(appState.db, PATH_ORDERS, id), { status: s, handledBy: empId });
                 showToast("تم تحديث الحالة للعميل", "success");
                 const o = appState.adminAllOrders.find(x => x.id === id);
-                if(o) o.status = s;
+                if(o) { o.status = s; o.handledBy = empId; }
                 window.renderAdminOrders();
                 window.renderPreviousOrders(); 
-                
+                window.renderAdminEmployees(); // Refresh stats
+
                 if(s === 'تم توصيل الطلب بنجاح' || s === 'مرفوض') {
                     setTimeout(() => toggleModal('admin-order-details', false), 500);
                 }
@@ -503,10 +605,12 @@
 
         // --- Users ---
         window.renderAdminUsers = () => {
-            const term = document.getElementById('admin-user-search').value.trim();
+            const term = document.getElementById('admin-user-search').value.trim().toLowerCase();
             const list = document.getElementById('admin-users-list');
-            const filtered = appState.adminAllUsers.filter(u => (u.phone||'').includes(term) || (u.name||'').includes(term));
+            const filtered = appState.adminAllUsers.filter(u => (u.phone||'').toLowerCase().includes(term) || (u.name||'').toLowerCase().includes(term));
             
+            document.getElementById('count-users').textContent = filtered.length;
+
             if (filtered.length === 0) {
                 list.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p class="font-bold">لا يوجد عملاء يطابقون بحثك</p></div>';
                 return;
@@ -515,6 +619,7 @@
             list.innerHTML = filtered.map(u => {
                 const debtHtml = (u.debt && u.debt > 0) ? `<p class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg inline-block mr-1 mb-1 mt-1 border border-red-100">المستحقات: ${u.debt.toFixed(2)} د.أ</p>` : '';
                 const couponHtml = (u.customCoupon) ? `<p class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg inline-block mr-1 mb-1 mt-1 border border-blue-100"><i data-lucide="tag" class="w-3 h-3 inline"></i> ${u.customCoupon.code} (${u.customCoupon.maxUses||1} مرة)</p>` : '';
+                const freeDelHtml = (u.freeDelivery) ? `<p class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg inline-block mr-1 border border-green-100"><i data-lucide="truck" class="w-3 h-3 inline"></i> مجاني</p>` : '';
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow relative overflow-hidden">
                     <div>
@@ -522,7 +627,7 @@
                         <p class="text-xs text-gray-500 mt-1 mb-2 font-medium" dir="ltr">${u.phone||'لا يوجد رقم'}</p>
                         <p class="text-sm font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg inline-block border border-green-100">الرصيد: ${(u.balance||0).toFixed(2)} د.أ</p>
                         <br>
-                        ${debtHtml} ${couponHtml}
+                        ${debtHtml} ${couponHtml} ${freeDelHtml}
                     </div>
                     <div class="flex flex-col gap-2">
                         <button onclick="window.openAdminWallet('${u.uid}')" class="bg-[#00839b] hover:bg-[#002d74] transition-colors text-white p-2.5 rounded-xl shadow-sm" title="تعديل المحفظة والخصم">
@@ -544,18 +649,22 @@
             document.getElementById('wallet-edit-phone').textContent = u.phone || u.name || 'عميل';
             document.getElementById('wallet-edit-balance').value = u.balance || 0;
             document.getElementById('wallet-edit-debt').value = u.debt || 0;
+            document.getElementById('wallet-edit-points').value = u.points || 0;
             document.getElementById('wallet-edit-coupon-code').value = u.customCoupon?.code || '';
             document.getElementById('wallet-edit-coupon-val').value = u.customCoupon?.val || '';
             document.getElementById('wallet-edit-coupon-uses').value = u.customCoupon?.maxUses || 1;
+            document.getElementById('wallet-edit-free-delivery').checked = u.freeDelivery === true;
             toggleModal('admin-wallet', true);
         };
 
         window.saveAdminWallet = async () => {
             const bal = parseFloat(document.getElementById('wallet-edit-balance').value) || 0;
             const debt = parseFloat(document.getElementById('wallet-edit-debt').value) || 0;
+            const pts = parseInt(document.getElementById('wallet-edit-points').value) || 0;
             const couponCode = document.getElementById('wallet-edit-coupon-code').value.trim();
             const couponVal = parseFloat(document.getElementById('wallet-edit-coupon-val').value) || 0;
             const couponUses = parseInt(document.getElementById('wallet-edit-coupon-uses').value) || 1;
+            const freeDel = document.getElementById('wallet-edit-free-delivery').checked;
             
             let customCoupon = null;
             if(couponCode && couponVal > 0) {
@@ -565,9 +674,9 @@
             const btn = document.getElementById('btn-save-wallet');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
             try {
-                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { balance: bal, debt: debt, customCoupon: customCoupon });
+                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { balance: bal, debt: debt, points: pts, customCoupon: customCoupon, freeDelivery: freeDel });
                 const u = appState.adminAllUsers.find(x=>x.uid===appState.editingUser); 
-                if(u) { u.balance = bal; u.debt = debt; u.customCoupon = customCoupon;}
+                if(u) { u.balance = bal; u.debt = debt; u.points = pts; u.customCoupon = customCoupon; u.freeDelivery = freeDel; }
                 window.renderAdminUsers(); 
                 toggleModal('admin-wallet', false); 
                 showToast("تم تحديث بيانات العميل بنجاح", "success");
@@ -588,37 +697,53 @@
             }
         };
 
-        // --- Feedback ---
+        // --- Feedback (Suggestions & Ratings) ---
         window.renderAdminFeedback = () => {
+            const term = document.getElementById('admin-feedback-search').value.trim().toLowerCase();
             const list = document.getElementById('admin-feedback-list');
-            if(!appState.adminAllFeedback.length) {
+            
+            const filtered = appState.adminAllFeedback.filter(f => 
+                (f.customerName||'').toLowerCase().includes(term) || 
+                (f.phone||'').toLowerCase().includes(term) ||
+                (f.content||'').toLowerCase().includes(term)
+            );
+
+            document.getElementById('count-feedback').textContent = filtered.length;
+
+            if(!filtered.length) {
                 list.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><i data-lucide="message-square" class="w-12 h-12 mx-auto mb-3 opacity-50"></i><p class="font-bold">لا يوجد رسائل أو شكاوي</p></div>';
                 if(window.lucide) lucide.createIcons(); return;
             }
-            const sorted = [...appState.adminAllFeedback].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            const sorted = [...filtered].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
             list.innerHTML = sorted.map(f => {
-                const isResolved = f.status === 'تم حلها';
+                const isResolved = f.status === 'تم حلها' || f.status === 'مغلق';
                 const statusColor = isResolved ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700';
-                const typeLabel = f.type === 'complaint' ? 'شكوى 🚨' : 'اقتراح 💡';
+                
+                let typeLabel = '';
+                if(f.type === 'complaint') typeLabel = '<span class="text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">شكوى 🚨</span>';
+                else if(f.type === 'rating') typeLabel = `<span class="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200">تقييم <i data-lucide="star" class="w-3 h-3 inline fill-yellow-400 text-yellow-400"></i> ${f.rating}</span>`;
+                else typeLabel = '<span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">اقتراح 💡</span>';
+
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative">
                     <div class="flex justify-between items-start mb-3 border-b pb-3 border-gray-50">
                         <div>
                             <h4 class="font-bold text-[#002d74] text-sm flex items-center gap-1"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${f.customerName}</h4>
                             <p class="text-xs text-gray-500 font-medium mt-1 mb-1" dir="ltr">${f.phone}</p>
-                            <span class="text-xs font-bold text-gray-600 block">${typeLabel}</span>
+                            <span class="text-xs font-bold block mt-2">${typeLabel}</span>
                         </div>
                         <div class="flex items-center gap-2">
+                            ${f.type === 'rating' ? `<span class="text-xs font-bold px-3 py-2 rounded-xl bg-gray-100 text-gray-600">تقييم مغلق</span>` : `
                             <select onchange="window.updateFeedbackStatus('${f.id}', this.value)" class="text-xs font-bold px-3 py-2 rounded-xl outline-none border focus:ring-2 focus:ring-[#00839b] ${statusColor} cursor-pointer shadow-sm">
                                 <option value="يتم حلها" ${!isResolved ? 'selected' : ''}>يتم حلها</option>
                                 <option value="تم حلها" ${isResolved ? 'selected' : ''}>تم حلها</option>
-                            </select>
-                            <button onclick="window.deleteFeedback('${f.id}', event)" class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-xl transition-colors shadow-sm" title="حذف الرسالة">
+                            </select>`}
+                            <button onclick="window.deleteFeedback('${f.id}', event)" class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-xl transition-colors shadow-sm border border-red-100" title="حذف الرسالة">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
                     </div>
-                    <p class="text-sm text-gray-700 leading-relaxed font-medium bg-gray-50 p-4 rounded-xl border border-gray-100">${f.content}</p>
+                    <p class="text-sm text-gray-700 leading-relaxed font-medium bg-gray-50 p-4 rounded-xl border border-gray-100">${f.content || 'لم يترك تعليقاً'}</p>
                 </div>
                 `;
             }).join('');
@@ -628,18 +753,75 @@
         window.updateFeedbackStatus = async (id, s) => {
             try {
                 await updateDoc(doc(appState.db, PATH_FEEDBACK, id), { status: s });
-                showToast('تم تحديث حالة الرسالة لتعكس عند العميل', 'success');
+                showToast('تم تحديث الحالة بنجاح', 'success');
             } catch(e) { showToast('خطأ في التحديث', 'error'); }
         };
 
         window.deleteFeedback = async (id, event) => {
             if(event) event.stopPropagation();
-            if(confirm('هل أنت متأكد من حذف هذه الرسالة نهائياً؟')) {
+            if(confirm('هل أنت متأكد من مسح هذه الرسالة/التقييم نهائياً؟')) {
                 try {
                     await deleteDoc(doc(appState.db, PATH_FEEDBACK, id));
-                    showToast('تم حذف الرسالة بنجاح', 'success');
-                } catch(e) { showToast('حدث خطأ أثناء الحذف', 'error'); }
+                    showToast('تم مسح الرسالة بنجاح', 'success');
+                } catch(e) { showToast('حدث خطأ أثناء المسح', 'error'); }
             }
+        };
+
+        // --- Employees ---
+        window.renderAdminEmployees = () => {
+            const term = document.getElementById('admin-employee-search')?.value.trim().toLowerCase() || '';
+            const list = document.getElementById('admin-employees-list');
+            if(!list) return;
+
+            const filtered = appState.adminEmployees.filter(e => (e.name||'').toLowerCase().includes(term));
+            
+            document.getElementById('count-employees').textContent = filtered.length;
+
+            if(!filtered.length) {
+                list.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p class="font-bold">لا يوجد موظفين</p></div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(emp => {
+                const empOrders = appState.adminAllOrders.filter(o => o.handledBy === emp.id);
+                const acceptedOrders = empOrders.filter(o => o.status === 'تم توصيل الطلب بنجاح' || o.status === 'تم التوصيل' || o.status.includes('تم استلام'));
+                const rejectedOrders = empOrders.filter(o => o.status === 'مرفوض');
+                const totalValue = acceptedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+                
+                const empRatings = appState.adminAllFeedback.filter(f => f.type === 'rating' && empOrders.find(o => o.id === f.orderId));
+                let avgRating = 0;
+                if (empRatings.length > 0) {
+                    const sum = empRatings.reduce((s, r) => s + (r.rating || 0), 0);
+                    avgRating = (sum / empRatings.length).toFixed(1);
+                }
+
+                return `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3 border-gray-50">
+                        <h4 class="font-bold text-[#002d74] text-lg flex items-center gap-2"><i data-lucide="user-circle" class="text-gray-400"></i> ${emp.name}</h4>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm font-bold text-gray-600">
+                        <div class="bg-green-50 p-3 rounded-xl border border-green-100 flex flex-col justify-center items-center text-center">
+                            <span class="text-green-700 text-lg mb-1">${acceptedOrders.length}</span>
+                            <span class="text-xs text-green-600">مكتمل</span>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-xl border border-red-100 flex flex-col justify-center items-center text-center">
+                            <span class="text-red-700 text-lg mb-1">${rejectedOrders.length}</span>
+                            <span class="text-xs text-red-600">ملغي</span>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex flex-col justify-center items-center text-center col-span-2">
+                            <span class="text-[#002d74] text-xl mb-1">${totalValue.toFixed(2)} د.أ</span>
+                            <span class="text-xs text-blue-600">إجمالي المبيعات</span>
+                        </div>
+                        <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-100 flex flex-col justify-center items-center text-center col-span-2">
+                            <span class="text-yellow-600 text-xl mb-1 flex items-center gap-1"><i data-lucide="star" class="w-4 h-4 fill-yellow-500"></i> ${avgRating > 0 ? avgRating : 'لا يوجد'}</span>
+                            <span class="text-xs text-yellow-700">متوسط التقييمات</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            if(window.lucide) lucide.createIcons();
         };
 
         // Start

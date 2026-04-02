@@ -292,12 +292,19 @@
                     </label>
                 </div>
 
-                <!-- Custom Delivery Fee -->
+                <!-- Custom Delivery Fee with Target Selection -->
                 <div class="pt-3 pb-2 border-b border-gray-100 flex flex-col gap-2">
                     <label class="text-sm font-bold text-[#002d74] flex items-center gap-1">
                         <i data-lucide="coins" class="w-4 h-4"></i> سعر توصيل مخصص (د.أ)
                     </label>
-                    <input type="number" step="0.01" id="wallet-edit-custom-delivery" placeholder="مثال: 0.10 (يترك فارغاً للسعر الافتراضي)" class="w-full p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] text-sm font-bold bg-gray-50 text-center">
+                    <div class="flex gap-2">
+                        <input type="number" step="0.01" id="wallet-edit-custom-delivery" placeholder="القيمة (مثال: 0.10)" class="w-1/2 p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] text-sm font-bold bg-gray-50 text-center">
+                        <select id="wallet-edit-custom-delivery-target" class="w-1/2 p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#00839b] text-sm font-bold bg-gray-50">
+                            <option value="all">يُطبق على الكل</option>
+                            <option value="سناكات">سناكات فقط</option>
+                            <option value="مطعم سلمة">مطعم سلمة فقط</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Custom Coupon -->
@@ -923,7 +930,9 @@
                 const debtHtml = (u.debt && u.debt > 0) ? `<p class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg inline-block mr-1 mb-1 mt-1 border border-red-100">المستحقات: ${u.debt.toFixed(2)} د.أ</p>` : '';
                 const couponHtml = (u.customCoupon) ? `<p class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg inline-block mr-1 mb-1 mt-1 border border-blue-100"><i data-lucide="tag" class="w-3 h-3 inline"></i> ${u.customCoupon.code} (${u.customCoupon.maxUses||1} مرة)</p>` : '';
                 const freeDelHtml = (u.freeDelivery) ? `<p class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg inline-block mr-1 border border-green-100"><i data-lucide="truck" class="w-3 h-3 inline"></i> مجاني</p>` : '';
-                const customDelHtml = (u.customDelivery !== undefined && u.customDelivery !== '') ? `<p class="text-xs font-bold text-[#00839b] bg-[#f0f9fa] px-2 py-1 rounded-lg inline-block mr-1 mb-1 mt-1 border border-[#00839b]/20"><i data-lucide="coins" class="w-3 h-3 inline"></i> توصيل مخصص: ${parseFloat(u.customDelivery).toFixed(2)}</p>` : '';
+                
+                let targetText = u.customDeliveryTarget === 'سناكات' ? ' (سناكات)' : (u.customDeliveryTarget === 'مطعم سلمة' ? ' (سلمة)' : ' (الكل)');
+                const customDelHtml = (u.customDelivery !== undefined && u.customDelivery !== '') ? `<p class="text-xs font-bold text-[#00839b] bg-[#f0f9fa] px-2 py-1 rounded-lg inline-block mr-1 mb-1 mt-1 border border-[#00839b]/20"><i data-lucide="coins" class="w-3 h-3 inline"></i> توصيل: ${parseFloat(u.customDelivery).toFixed(2)}${targetText}</p>` : '';
 
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow relative overflow-hidden">
@@ -960,6 +969,7 @@
             document.getElementById('wallet-edit-coupon-uses').value = u.customCoupon?.maxUses || 1;
             document.getElementById('wallet-edit-free-delivery').checked = u.freeDelivery === true;
             document.getElementById('wallet-edit-custom-delivery').value = u.customDelivery !== undefined ? u.customDelivery : '';
+            document.getElementById('wallet-edit-custom-delivery-target').value = u.customDeliveryTarget || 'all';
             toggleModal('admin-wallet', true);
         };
 
@@ -974,6 +984,7 @@
             
             const customDeliveryInput = document.getElementById('wallet-edit-custom-delivery').value.trim();
             const customDelivery = customDeliveryInput === '' ? '' : parseFloat(customDeliveryInput);
+            const customDeliveryTarget = document.getElementById('wallet-edit-custom-delivery-target').value;
 
             let customCoupon = null;
             if(couponCode && couponVal > 0) {
@@ -983,9 +994,19 @@
             const btn = document.getElementById('btn-save-wallet');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
             try {
-                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { balance: bal, debt: debt, points: pts, customCoupon: customCoupon, freeDelivery: freeDel, customDelivery: customDelivery });
+                await updateDoc(doc(appState.db, PATH_PROFILES, appState.editingUser), { 
+                    balance: bal, debt: debt, points: pts, 
+                    customCoupon: customCoupon, freeDelivery: freeDel, 
+                    customDelivery: customDelivery, customDeliveryTarget: customDeliveryTarget 
+                });
+                
                 const u = appState.adminAllUsers.find(x=>x.uid===appState.editingUser); 
-                if(u) { u.balance = bal; u.debt = debt; u.points = pts; u.customCoupon = customCoupon; u.freeDelivery = freeDel; u.customDelivery = customDelivery; }
+                if(u) { 
+                    u.balance = bal; u.debt = debt; u.points = pts; 
+                    u.customCoupon = customCoupon; u.freeDelivery = freeDel; 
+                    u.customDelivery = customDelivery; u.customDeliveryTarget = customDeliveryTarget; 
+                }
+                
                 window.renderAdminUsers(); 
                 toggleModal('admin-wallet', false); 
                 showToast("تم تحديث بيانات العميل بنجاح", "success");

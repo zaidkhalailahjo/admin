@@ -37,10 +37,9 @@
 </head>
 <body class="flex flex-col min-h-screen text-gray-800">
 
-    <!-- z-[99999] لضمان ظهور الإشعار فوق كل النوافذ -->
     <div id="toast-container" class="fixed top-5 right-5 z-[99999] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Login Screen (Visible by default) -->
+    <!-- Login Screen -->
     <div id="login-screen" class="flex-grow flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-3xl w-full max-w-sm text-center shadow-2xl border border-gray-100">
             <div class="w-20 h-20 bg-[#00f] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -55,7 +54,7 @@
         </div>
     </div>
 
-    <!-- Admin Dashboard (Hidden by default) -->
+    <!-- Admin Dashboard -->
     <div id="dashboard-screen" class="hidden flex-col h-screen overflow-hidden">
         <!-- Header -->
         <header class="bg-[#002d74] text-white shadow-md z-10 flex-shrink-0">
@@ -81,28 +80,31 @@
                     <span class="flex items-center gap-2"><i data-lucide="shopping-bag" class="w-5 h-5 mx-auto md:mx-0"></i> الطلبات</span>
                 </button>
                 <button onclick="window.switchAdminTab('history')" id="tab-history" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
-                    <span class="flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 mx-auto md:mx-0"></i> الطلبات السابقة</span>
+                    <span class="flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 mx-auto md:mx-0"></i> السجل</span>
                 </button>
                 <button onclick="window.switchAdminTab('users')" id="tab-users" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-2 transition-colors">
                     <span class="flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 mx-auto md:mx-0"></i> العملاء</span>
                     <span id="badge-users" class="hidden bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">0</span>
                 </button>
                 <button onclick="window.switchAdminTab('feedback')" id="tab-feedback" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-2 transition-colors">
-                    <span class="flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 mx-auto md:mx-0"></i> الشكاوي</span>
+                    <span class="flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 mx-auto md:mx-0"></i> الدعم والشكاوي</span>
                     <span id="badge-feedback" class="hidden text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">0</span>
                 </button>
                 <button onclick="window.switchAdminTab('ratings')" id="tab-ratings" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-2 transition-colors">
-                    <span class="flex items-center gap-2"><i data-lucide="star" class="w-5 h-5 mx-auto md:mx-0"></i> تقييمات العملاء</span>
+                    <span class="flex items-center gap-2"><i data-lucide="star" class="w-5 h-5 mx-auto md:mx-0"></i> التقييمات</span>
                 </button>
                 <button onclick="window.switchAdminTab('employees')" id="tab-employees" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
                     <span class="flex items-center gap-2"><i data-lucide="briefcase" class="w-5 h-5 mx-auto md:mx-0"></i> الموظفين</span>
+                </button>
+                <button onclick="window.switchAdminTab('settings')" id="tab-settings" class="shrink-0 flex-1 md:flex-none p-4 font-bold text-center md:text-left border-b-4 md:border-b-0 md:border-r-4 border-transparent text-gray-500 hover:bg-gray-50 flex flex-col md:flex-row items-center gap-2 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5 mx-auto md:mx-0"></i> الإعدادات</span>
                 </button>
             </div>
 
             <!-- Content Area -->
             <div class="flex-grow p-4 md:p-6 overflow-y-auto bg-gray-50 relative" id="admin-content-area">
                 
-                <!-- Orders Section (Active Only) -->
+                <!-- Orders Section -->
                 <div id="admin-orders-sec" class="space-y-4">
                     <div class="flex justify-between items-end mb-4">
                         <h2 class="text-xl font-bold text-[#002d74]">أحدث الطلبات (غير المكتملة) (<span id="count-orders">0</span>)</h2>
@@ -123,9 +125,7 @@
                         <input type="text" id="admin-history-search" oninput="window.renderPreviousOrders()" placeholder="ابحث باسم العميل أو رقم الهاتف..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent font-medium">
                         <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
                     </div>
-                    <div id="previous-orders-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- Previous orders injected here -->
-                    </div>
+                    <div id="previous-orders-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
                 </div>
 
                 <!-- Users Section -->
@@ -140,9 +140,9 @@
                     </div>
                 </div>
 
-                <!-- Feedback Section -->
+                <!-- Feedback / Support Section -->
                 <div id="admin-feedback-sec" class="hidden space-y-4">
-                    <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-6 h-6 text-[#00839b]"></i> صندوق الاقتراحات والشكاوي (<span id="count-feedback">0</span>)</h2>
+                    <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-6 h-6 text-[#00839b]"></i> رسائل الدعم والشكاوي (<span id="count-feedback">0</span>)</h2>
                     <div class="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-4">
                         <input type="text" id="admin-feedback-search" oninput="window.renderAdminFeedback()" placeholder="ابحث في الرسائل..." class="w-full p-3 pr-10 border-none outline-none text-gray-700 bg-transparent font-medium">
                         <i data-lucide="search" class="absolute right-4 top-4 text-gray-400 w-6 h-6"></i>
@@ -170,11 +170,24 @@
                     <div id="admin-employees-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
 
+                <!-- Settings Section -->
+                <div id="admin-settings-sec" class="hidden space-y-4">
+                    <h2 class="text-xl font-bold text-[#002d74] mb-4 flex items-center gap-2"><i data-lucide="settings" class="w-6 h-6 text-[#00839b]"></i> إعدادات النظام</h2>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-gray-700 mb-2">الشروط والأحكام الخاصة بالتطبيق</h3>
+                        <p class="text-xs text-gray-500 mb-4">هذا النص سيظهر للعملاء في صفحة الشروط والأحكام. يفضل تنسيقه كنقاط.</p>
+                        <textarea id="admin-terms-input" class="w-full p-4 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#00839b] bg-gray-50 text-sm font-medium leading-relaxed" rows="10"></textarea>
+                        <button onclick="window.saveSettings()" class="w-full md:w-auto mt-4 px-8 py-3 bg-[#002d74] text-white font-bold rounded-xl shadow hover:bg-[#001d4a] transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i> حفظ الإعدادات
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Employee Dashboard (Hidden by default) -->
+    <!-- Employee Dashboard -->
     <div id="employee-dashboard-screen" class="hidden flex-col h-screen overflow-hidden">
         <!-- Header -->
         <header class="bg-[#00839b] text-white shadow-md z-10 flex-shrink-0">
@@ -207,12 +220,10 @@
             <div class="flex-grow p-4 md:p-6 overflow-y-auto bg-gray-50 relative">
                 <!-- Orders Sec -->
                 <div id="emp-orders-sec" class="space-y-6">
-                    <!-- My Active Orders -->
                     <div>
                         <h2 class="text-lg font-bold text-[#00839b] mb-3 border-b border-gray-200 pb-2">طلبات بعهدتي الآن (قيد التنفيذ)</h2>
                         <div id="emp-my-orders-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
-                    <!-- New Orders -->
                     <div>
                         <h2 class="text-lg font-bold text-[#002d74] mb-3 border-b border-gray-200 pb-2">الطلبات الجديدة</h2>
                         <div id="emp-new-orders-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -254,7 +265,7 @@
         </div>
     </div>
 
-    <!-- Admin Wallet & Coupon Modal -->
+    <!-- Admin Wallet Modal -->
     <div id="admin-wallet-modal" class="modal fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
          <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl transform scale-95 transition-all max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -265,7 +276,6 @@
             <p id="wallet-edit-phone" class="text-sm font-bold text-[#00839b] mb-4 bg-[#f0f9fa] p-2 rounded-lg text-center" dir="ltr"></p>
             
             <div class="space-y-4">
-                <!-- Balance, Debt & Points -->
                 <div class="grid grid-cols-2 gap-3 mb-2">
                     <div class="text-right">
                         <label class="text-xs font-bold text-green-700 mb-1 block">رصيد متاح (+)</label>
@@ -281,7 +291,6 @@
                     </div>
                 </div>
 
-                <!-- Free Delivery Toggle -->
                 <div class="pt-3 pb-2 border-b border-t border-gray-100 flex items-center justify-between">
                     <label class="text-sm font-bold text-[#002d74] flex items-center gap-1 cursor-pointer">
                         <i data-lucide="truck" class="w-4 h-4"></i> تفعيل التوصيل المجاني
@@ -292,7 +301,6 @@
                     </label>
                 </div>
 
-                <!-- Custom Delivery Fee with Target Selection -->
                 <div class="pt-3 pb-2 border-b border-gray-100 flex flex-col gap-2">
                     <label class="text-sm font-bold text-[#002d74] flex items-center gap-1">
                         <i data-lucide="coins" class="w-4 h-4"></i> سعر توصيل مخصص (د.أ)
@@ -307,7 +315,6 @@
                     </div>
                 </div>
 
-                <!-- Custom Coupon -->
                 <div class="pt-2">
                     <label class="text-xs font-bold text-[#002d74] mb-2 block flex items-center gap-1"><i data-lucide="tag" class="w-4 h-4"></i> كود خصم خاص بالعميل</label>
                     <div class="flex flex-col gap-2">
@@ -347,16 +354,14 @@
                 <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="receipt" class="w-5 h-5"></i> تفاصيل الطلب</h2>
                 <button class="close-modal p-1.5 rounded-full hover:bg-white/20 bg-white/10 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="flex-grow overflow-y-auto p-4 bg-gray-50" id="admin-order-details-content">
-                <!-- Details injected here -->
-            </div>
+            <div class="flex-grow overflow-y-auto p-4 bg-gray-50" id="admin-order-details-content"></div>
          </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, collection, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'farah-snacks-v3';
         const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -373,6 +378,7 @@
         const PATH_PROFILES = `artifacts/${APP_ID}/public/data/profiles`;
         const PATH_FEEDBACK = `artifacts/${APP_ID}/public/data/feedback`;
         const PATH_EMPLOYEES = `artifacts/${APP_ID}/public/data/employees`;
+        const PATH_SETTINGS = `artifacts/${APP_ID}/public/data/settings`;
 
         let ignoredFallback = [];
         try { ignoredFallback = JSON.parse(localStorage.getItem('emp_ignored_orders') || '[]'); } catch(e) { ignoredFallback = []; }
@@ -382,6 +388,7 @@
             adminAllOrders: [],
             adminAllUsers: [],
             adminAllFeedback: [],
+            appSettings: { terms: '' },
             adminEmployees: [
                 {id: 'admin', name: 'الادمن', role: 'admin', password: 'admin', manualCompleted: 0, manualCanceled: 0},
                 {id: 'emp_1', name: 'راشد', role: 'employee', password: '123', manualCompleted: 0, manualCanceled: 0},
@@ -537,9 +544,9 @@
 
             const feedbackBadge = document.getElementById('badge-feedback');
             const unresolvedComplaints = appState.adminAllFeedback.filter(f => f.status === 'يتم حلها' && f.type === 'complaint').length;
-            const unresolvedSuggestions = appState.adminAllFeedback.filter(f => f.status === 'يتم حلها' && f.type === 'suggestion').length;
+            const unresolvedSuggestions = appState.adminAllFeedback.filter(f => f.status === 'يتم حلها' && (f.type === 'suggestion' || f.type === 'support')).length;
             
-            feedbackBadge.classList.remove('bg-red-500', 'bg-green-500', 'bg-[#8B4513]', 'hidden');
+            feedbackBadge.classList.remove('bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-[#8B4513]', 'hidden');
 
             if (unresolvedComplaints > 0 && unresolvedSuggestions > 0) {
                 feedbackBadge.textContent = unresolvedComplaints + unresolvedSuggestions;
@@ -549,7 +556,7 @@
                 feedbackBadge.classList.add('bg-red-500'); 
             } else if (unresolvedSuggestions > 0) {
                 feedbackBadge.textContent = unresolvedSuggestions;
-                feedbackBadge.classList.add('bg-green-500'); 
+                feedbackBadge.classList.add('bg-indigo-500'); 
             } else {
                 feedbackBadge.classList.add('hidden');
             }
@@ -558,6 +565,16 @@
         const initDataListeners = () => {
             if (!appState.db) return;
             
+            // Settings
+            onSnapshot(doc(appState.db, PATH_SETTINGS, 'appSettings'), (snap) => {
+                if (snap.exists()) {
+                    appState.appSettings = snap.data();
+                    if(document.getElementById('admin-terms-input')) {
+                        document.getElementById('admin-terms-input').value = appState.appSettings.terms || '';
+                    }
+                }
+            });
+
             // Employees
             onSnapshot(collection(appState.db, PATH_EMPLOYEES), (snap) => {
                 if(!snap.empty) {
@@ -625,7 +642,7 @@
         };
 
         window.switchAdminTab = (t) => {
-            ['orders', 'history', 'users', 'feedback', 'ratings', 'employees'].forEach(tab => {
+            ['orders', 'history', 'users', 'feedback', 'ratings', 'employees', 'settings'].forEach(tab => {
                 const sec = document.getElementById(`admin-${tab}-sec`);
                 const btn = document.getElementById(`tab-${tab}`);
                 if(sec) sec.classList.toggle('hidden', tab !== t);
@@ -638,7 +655,6 @@
                 }
             });
 
-            // Clear Users badge if viewing users
             if(t === 'users') {
                 appState.lastViewedUsers = appState.adminAllUsers.length;
                 localStorage.setItem('viewedUsersCount', appState.lastViewedUsers.toString());
@@ -704,12 +720,15 @@
                 if(o.status === 'تم قبول الطلب' || o.status === 'قيد التحضير' || o.status === 'قيد التنفيذ') statusBg = 'bg-orange-100 text-orange-700';
                 if(o.status === 'تم استلام الطلب' || o.status === 'قيد التوصيل' || o.status === 'في الطريق') statusBg = 'bg-blue-100 text-blue-700';
 
+                const scheduledBadge = (o.scheduledFor && o.scheduledFor !== 'ASAP') ? `<div class="mt-2 text-xs bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-lg border border-blue-100 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> مجدول: ${o.scheduledFor}</div>` : '';
+
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-[#00839b]/30 transition-all" onclick="window.showAdminOrderDetails('${o.id}')">
                     <div class="flex justify-between items-start mb-3 border-b border-gray-50 pb-3">
                         <div>
                             <h4 class="font-bold text-[#002d74] text-lg flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${o.customerName}</h4>
                             <p class="text-xs text-gray-500 mt-1" dir="ltr">${o.phone}</p>
+                            ${scheduledBadge}
                         </div>
                         <span class="text-xs px-3 py-1.5 rounded-full font-bold ${statusBg}">${o.status}</span>
                     </div>
@@ -761,17 +780,62 @@
             }
         };
 
+        window.updateCustomItemPrice = async (orderId, itemIndex) => {
+            const newPriceStr = document.getElementById(`custom-price-${orderId}-${itemIndex}`).value;
+            if (!newPriceStr) return showToast("الرجاء إدخال السعر", "error");
+            
+            const newPrice = parseFloat(newPriceStr);
+            const order = appState.adminAllOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const items = [...(order.items || [])];
+            items[itemIndex].product.price = newPrice;
+
+            let newTotalProducts = 0;
+            items.forEach(i => { if(i.isAvailable !== false) newTotalProducts += ((i.quantity || 1) * (i.product?.price || 0)); });
+            
+            const finalTotal = newTotalProducts + (order.fees?.delivery||0) + (order.fees?.service||0) - (order.fees?.discount||0);
+            
+            let newCashToCollect = finalTotal;
+            if (order.paymentMethod === 'wallet' && order.deductedFromWallet > 0) {
+                newCashToCollect = Math.max(0, finalTotal - order.deductedFromWallet);
+            }
+
+            try {
+                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { 
+                    items: items, 
+                    total: finalTotal,
+                    cashToCollect: newCashToCollect
+                });
+                showToast("تم تحديث السعر والمجموع بنجاح", "success");
+            } catch(e) { 
+                showToast("خطأ في التحديث", "error"); 
+            }
+        };
+
         window.showAdminOrderDetails = (orderId) => {
             const o = appState.adminAllOrders.find(x => x.id === orderId);
             if(!o) return;
             
-            const itemsHtml = (o.items || []).map((i, idx) => `
+            const itemsHtml = (o.items || []).map((i, idx) => {
+                let priceDisplay = `<span class="text-xs font-black ${i.isAvailable === false ? 'line-through text-red-400' : 'text-gray-600'}">${((i.product?.price || 0) * (i.quantity || 1)).toFixed(2)} د.أ</span>`;
+                
+                if (i.product?.id?.startsWith('custom_')) {
+                    priceDisplay = `
+                        <div class="flex items-center gap-2 mt-1">
+                            <input type="number" id="custom-price-${o.id}-${idx}" value="${i.product.price}" step="0.05" class="w-20 p-1 border border-[#00839b] rounded-lg text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-[#00839b]">
+                            <button onclick="window.updateCustomItemPrice('${o.id}', ${idx})" class="bg-[#00839b] text-white px-2 py-1.5 rounded-lg text-[10px] font-bold hover:bg-[#005f73] transition-colors shadow-sm">تعديل السعر</button>
+                        </div>
+                    `;
+                }
+
+                return `
                 <div class="flex flex-col bg-white p-3 rounded-xl mb-2 border ${i.isAvailable === false ? 'bg-red-50 border-red-300 shadow-inner' : 'border-gray-200 shadow-sm'} transition-colors">
                     <div class="flex items-center gap-3">
                         <img src="${i.product?.image || ''}" class="w-10 h-10 rounded-lg object-contain bg-white border border-gray-100 ${i.isAvailable === false ? 'opacity-50 grayscale' : ''}">
                         <div class="flex-grow">
                             <span class="text-sm font-bold block ${i.isAvailable === false ? 'line-through text-red-500' : 'text-[#002d74]'}">${i.product?.name || 'منتج'} ${i.option ? `<span class="text-[#00839b] mx-1">(${i.option})</span>` : ''} <span class="text-[#00839b] mx-1">x${i.quantity || 1}</span></span>
-                            <span class="text-xs font-black ${i.isAvailable === false ? 'line-through text-red-400' : 'text-gray-600'}">${((i.product?.price || 0) * (i.quantity || 1)).toFixed(2)} د.أ</span>
+                            ${priceDisplay}
                         </div>
                     </div>
                     <button onclick="window.toggleItemAvailability('${o.id}', ${idx})" class="mt-3 text-xs w-full py-2 rounded-lg font-bold transition-all shadow-sm flex justify-center items-center gap-1.5 ${i.isAvailable === false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-100 text-red-600 border border-red-200 hover:bg-red-200'}">
@@ -779,9 +843,18 @@
                         ${i.isAvailable === false ? 'إرجاع المنتج (موجود)' : 'تحديد كـ "غير موجود"'}
                     </button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             const dateStr = getOrderDateStr(o.createdAt);
+            
+            let scheduledBadge = '';
+            if (o.scheduledFor && o.scheduledFor !== 'ASAP') {
+                 scheduledBadge = `<div class="bg-blue-50 text-blue-700 p-3 rounded-xl text-sm font-bold text-center border border-blue-200 flex flex-col justify-center items-center gap-1 mb-4 shadow-sm">
+                    <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-4 h-4"></i> مطلوب التوصيل في وقت محدد:</span>
+                    <span class="text-lg">${o.scheduledFor}</span>
+                </div>`;
+            }
             
             let deliveryRowHtml = `<div class="flex justify-between text-gray-600"><span>سعر التوصيل:</span><span>+ ${(o.fees?.delivery||0).toFixed(2)} د.أ</span></div>`;
             if(o.fees?.isFreeDelivery) {
@@ -831,6 +904,7 @@
 
             const content = `
                 <div class="space-y-4">
+                    ${scheduledBadge}
                     ${actionAreaHtml}
                     <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden mt-4">
                         <div class="absolute top-0 left-0 w-1 h-full ${o.paymentMethod === 'wallet' ? 'bg-green-500' : 'bg-gray-400'}"></div>
@@ -885,8 +959,17 @@
             items.forEach(i => { if(i.isAvailable !== false) newTotalProducts += ((i.quantity || 1) * (i.product?.price || 0)); });
             const finalTotal = newTotalProducts + (order.fees?.delivery||0) + (order.fees?.service||0) - (order.fees?.discount||0);
             
+            let newCashToCollect = finalTotal;
+            if (order.paymentMethod === 'wallet' && order.deductedFromWallet > 0) {
+                newCashToCollect = Math.max(0, finalTotal - order.deductedFromWallet);
+            }
+
             try {
-                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { items: items, total: finalTotal });
+                await updateDoc(doc(appState.db, PATH_ORDERS, orderId), { 
+                    items: items, 
+                    total: finalTotal,
+                    cashToCollect: newCashToCollect
+                });
                 showToast(items[itemIndex].isAvailable ? "المنتج متوفر الآن" : "تم تعيين المنتج كغير موجود", "success");
             } catch(e) { showToast("خطأ في التحديث", "error"); }
         };
@@ -1027,7 +1110,19 @@
             }
         };
 
-        // --- Feedback (Suggestions & Complaints) ---
+        // --- Settings (Terms & Conditions) ---
+        window.saveSettings = async () => {
+            if(!appState.db) return;
+            const termsText = document.getElementById('admin-terms-input').value;
+            try {
+                await setDoc(doc(appState.db, PATH_SETTINGS, 'appSettings'), { terms: termsText }, { merge: true });
+                showToast("تم حفظ الإعدادات والشروط بنجاح", "success");
+            } catch(e) {
+                showToast("حدث خطأ أثناء الحفظ", "error");
+            }
+        };
+
+        // --- Feedback (Suggestions, Complaints & Support) ---
         window.renderAdminFeedback = () => {
             const term = document.getElementById('admin-feedback-search').value.trim().toLowerCase();
             const list = document.getElementById('admin-feedback-list');
@@ -1048,14 +1143,18 @@
             list.innerHTML = sorted.map(f => {
                 const isResolved = f.status === 'تم حلها' || f.status === 'مغلق';
                 const statusColor = isResolved ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700';
-                const typeLabel = f.type === 'complaint' ? '<span class="text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">شكوى 🚨</span>' : '<span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">اقتراح 💡</span>';
+                
+                let typeLabel = '';
+                if(f.type === 'complaint') typeLabel = '<span class="text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">شكوى 🚨</span>';
+                else if (f.type === 'suggestion') typeLabel = '<span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">اقتراح 💡</span>';
+                else if (f.type === 'support') typeLabel = '<span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">دعم فني 🎧</span>';
 
                 return `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative">
                     <div class="flex justify-between items-start mb-3 border-b pb-3 border-gray-50">
                         <div>
                             <h4 class="font-bold text-[#002d74] text-sm flex items-center gap-1"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${f.customerName}</h4>
-                            <p class="text-xs text-gray-500 font-medium mt-1 mb-1" dir="ltr">${f.phone}</p>
+                            <p class="text-xs text-gray-500 font-medium mt-1 mb-1" dir="ltr"><a href="tel:${f.phone}" class="hover:underline text-blue-500">${f.phone}</a></p>
                             <span class="text-xs font-bold block mt-2">${typeLabel}</span>
                         </div>
                         <div class="flex items-center gap-2">
